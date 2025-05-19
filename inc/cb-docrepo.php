@@ -2,6 +2,9 @@
 /**
  * CB DocRepo - Handles document repository functionality.
  *
+ * This file contains the implementation for managing the document repository,
+ * including download proxy, logging, and admin interface.
+ *
  * @package cb-arcusinvestor2025
  */
 
@@ -93,9 +96,9 @@ function cb_ensure_download_log_table() {
 
 	$table_name = $wpdb->prefix . 'cb_download_log';
 
-	// Check if the table exists first
+	// Check if the table exists first.
 	if ( $wpdb->get_var( "SHOW TABLES LIKE '{$table_name}'" ) !== $table_name ) {
-		// If not, create it
+		// If not, create it.
 		$charset_collate = $wpdb->get_charset_collate();
 
 		$sql = "CREATE TABLE $table_name (
@@ -202,15 +205,17 @@ add_action(
 				LEFT JOIN {$wpdb->users} u ON l.user_id = u.ID
 				WHERE l.action = 'login'
 				ORDER BY l.timestamp DESC
-			", ARRAY_A );
-		
+				",
+				ARRAY_A
+			);
+
 			cb_export_csv( $results, 'login-log.csv' );
 		}
 
 		if ( isset( $_POST['cb_export_user_activity'] ) ) {
 			if ( ! empty( $_POST['cb_user_id'] ) ) {
 				$user_id = intval( $_POST['cb_user_id'] );
-		
+
 				$results = $wpdb->get_results(
 					$wpdb->prepare(
 						"
@@ -229,7 +234,7 @@ add_action(
 					),
 					ARRAY_A
 				);
-		
+
 				cb_export_csv( $results, 'user-' . $user_id . '-activity.csv' );
 			}
 		}
@@ -246,10 +251,12 @@ add_action(
 				LEFT JOIN {$wpdb->users} u ON l.user_id = u.ID
 				WHERE l.attachment_id IS NOT NULL
 				ORDER BY l.timestamp DESC
-			", ARRAY_A );
-		
+				",
+				ARRAY_A
+			);
+
 			$results = array();
-		
+
 			foreach ( $raw_results as $row ) {
 				if ( ! empty( $row['attachment_id'] ) ) {
 					$post = get_post( $row['attachment_id'] );
@@ -263,10 +270,9 @@ add_action(
 				}
 				$results[] = $row;
 			}
-		
+
 			cb_export_csv( $results, 'file-access-log.csv' );
 		}
-		
 	}
 );
 
