@@ -1,0 +1,34 @@
+.document-list li.hidden {
+    opacity: 0;
+    height: 0;
+    margin: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+    border: 0;
+    overflow: hidden;
+    transition:
+        opacity 0.2s ease,
+        height 0.2s ease,
+        margin 0.2s ease,
+        padding 0.2s ease,
+        border 0.2s ease;
+}
+
+/* Ensure visible items stay natural */
+.document-list li.list-group-item {
+    transition:
+        opacity 0.2s ease,
+        height 0.2s ease,
+        margin 0.2s ease,
+        padding 0.2s ease,
+        border 0.2s ease;
+    border-left: none;
+    border-right: none;
+    border-top: none;
+    border-radius: 0;
+}
+
+.tab-content {
+    border-inline: 1px solid #dee2e6;
+    border-bottom: 1px solid #dee2e6;
+}

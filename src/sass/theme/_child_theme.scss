@@ -1,0 +1,151 @@
+@import 'typography';
+@import 'colours';
+@import 'buttons';
+@import 'header';
+@import 'footer';
+@import 'blocks/blocks';
+
+body {
+    background-color: #f6f6f6;
+}
+
+@media (min-width: 992px) {
+    .cols-lg-2 {
+        columns: 2;
+    }
+    .cols-lg-3 {
+        columns: 3;
+    }
+}
+
+.sticky {
+    position: sticky;
+    top: 0; // var(--h-top);
+    @media (min-width: 992px) {
+        top: 0; //var(--h-top-desktop);
+    }
+    background-color: #fff;
+    z-index: 1000;
+}
+
+#breadcrumbs {
+    font-size: var(--fs-200);
+    a {
+        text-decoration: none;
+        font-weight: var(--fw-800);
+        color: var(--col-dark);
+    }
+}
+
+.wp-block-group {
+    @extend .container;
+    background-color: white;
+    padding: 3rem;
+    & .container {
+        padding-inline: 0;
+    }
+}
+.container .container {
+    padding-inline: 0;
+}
+
+.post_meta {
+    margin-bottom: 1rem;
+    display: flex;
+    gap: 0.5rem;
+    &__author {
+        font-weight: var(--fw-800);
+        text-decoration: none;
+        color: var(--col-dark);
+        &:hover {
+            color: var(--col-red-400);
+        }
+    }
+    &__date {
+        color: var(--col-gold-400);
+    }
+}
+
+ul.wp-block-list {
+    list-style: none;
+    padding-left: 0;
+    margin-bottom: 2rem;
+    li {
+        display: flex;
+        align-items: flex-start;
+        gap: 8px;
+        margin-bottom: 0.25rem;
+        &::before {
+            content: '';
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            background-image: url("data:image/svg+xml,%3C%3Fxml version='1.0' encoding='UTF-8'%3F%3E%3Csvg id='Layer_2' data-name='Layer 2' xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink' viewBox='0 0 19.6 19.6'%3E%3Cdefs%3E%3Cstyle%3E .cls-1 %7B fill: %23bb322a; %7D .cls-2 %7B fill: %23fff; %7D .cls-3 %7B fill: none; %7D .cls-4 %7B clip-path: url(%23clippath); %7D %3C/style%3E%3CclipPath id='clippath'%3E%3Ccircle class='cls-3' cx='9.8' cy='9.8' r='9.8'/%3E%3C/clipPath%3E%3C/defs%3E%3Cg id='Main_Layout' data-name='Main Layout'%3E%3Cg%3E%3Ccircle class='cls-1' cx='9.8' cy='9.8' r='9.8'/%3E%3Cg class='cls-4'%3E%3Cg%3E%3Cpath class='cls-1' d='M-7.15,22.05h15.5V-1.03H-7.15v23.08Z'/%3E%3Cg%3E%3Crect class='cls-2' x='-20.03' y='8.51' width='29.17' height='2.3'/%3E%3Cpolyline class='cls-2' points='8.32 3.12 16.58 9.66 8.32 16.21'/%3E%3C/g%3E%3C/g%3E%3C/g%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: center;
+            background-size: contain;
+            flex-shrink: 0;
+            margin-top: 6px;
+        }
+    }
+}
+
+// show stuff that overflows horizontally
+// * {
+//     outline: 1px solid #f00 !important;
+// }
+// show stuff that overflows horizontally via console JS
+/*
+var all = document.getElementsByTagName("*"), i = 0, rect, docWidth = document.documentElement.offsetWidth;
+for (; i < all.length; i++) {
+    rect = all[i].getBoundingClientRect();
+    if (rect.right > docWidth || rect.left < 0){
+        console.log(all[i]);
+        all[i].style.borderTop = '1px solid red';
+    }
+}
+*/
+
+// @mixin fluid-type($min-vw, $max-vw, $min-value, $max-value) {
+// 	$factor: 1 / ($max-vw - $min-vw) * ($max-value - $min-value);
+// 	$calc-value: unquote('#{ $min-value - ($min-vw * $factor) } + #{ 100vw * $factor }');
+
+// 	font-size: $min-value; // Fallback for older browsers
+// 	font-size: clamp(#{if($min-value > $max-value, $max-value, $min-value)}, #{$calc-value}, #{if($min-value > $max-value, $min-value, $max-value)});
+// }
+
+.divider {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    margin: 4rem auto;
+    width: min(90vw, 75%);
+    height: 2.5rem;
+    background-image: url("data:image/svg+xml,%3C%3Fxml version='1.0' encoding='UTF-8'%3F%3E%3Csvg id='Isolation_Mode' data-name='Isolation Mode' xmlns='http://www.w3.org/2000/svg' viewBox='0 0 26.82 33.83'%3E%3Cdefs%3E%3Cstyle%3E .cls-1 %7B fill: %23af3023; %7D .cls-2 %7B fill: %230d2444; %7D %3C/style%3E%3C/defs%3E%3Cpath id='Fill-7' class='cls-2' d='M12.82,19.15c1.24,5.23,1.29,10.32.39,14.67h3.3c.54-3.92.35-8.32-.71-12.84C13.7,12.15,6.25,3.25.39,0c5.51,3.05,10.34,10.33,12.42,19.15'/%3E%3Cpolyline id='Fill-9' class='cls-1' points='26.82 11.06 20.32 11.39 22.92 12.34 0 19.6 1.61 23.59 23.13 12.86 21.94 15.37 26.82 11.06'/%3E%3C/svg%3E");
+    background-size: auto 100%;
+    background-repeat: no-repeat;
+    background-position: center;
+    &::before,
+    &::after {
+        content: '';
+        flex: 1;
+        height: 1px;
+        background-color: var(--col-blue-100);
+    }
+    &::before {
+        margin-right: 2rem;
+    }
+    &::after {
+        margin-left: 2rem;
+    }
+}
+
+.form-control {
+    border-radius: 0;
+}
+
+.login-form {
+    max-width: 600px;
+    margin-inline: auto;
+}

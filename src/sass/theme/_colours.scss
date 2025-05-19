@@ -1,0 +1,35 @@
+/* Colour Classes */
+.has-dark-color,
+.text--dark {
+    color: var(--col-dark);
+}
+.has-dark-background-color,
+.bg--dark {
+    background-color: var(--col-dark);
+}
+
+.has-light-color,
+.text--light {
+    color: var(--col-light);
+}
+.has-light-background-color,
+.bg--light {
+    background-color: var(--col-light);
+}
+
+.bg--white {
+    background-color: white;
+}
+
+.has-grey-100-background-color,
+.bg--grey-100 {
+    background-color: var(--col-grey-100);
+}
+
+.has-red-400-color {
+    color: var(--col-red-400);
+}
+
+.has-gold-400-color {
+    color: var(--col-gold-400);
+}

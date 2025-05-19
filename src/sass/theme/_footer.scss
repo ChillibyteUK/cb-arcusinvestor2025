@@ -1,0 +1,80 @@
+.footer {
+    background-color: var(--col-blue-400);
+    color: white;
+
+    font-size: var(--fs-300);
+
+    &__logo {
+        max-width: 140px;
+        margin-bottom: 1rem;
+    }
+
+    &__menu {
+        ul {
+            list-style: none;
+            padding-inline-start: 0;
+            line-height: 2;
+            a {
+                text-decoration: none;
+                color: white;
+            }
+        }
+    }
+
+    &__addresses {
+        display: inline-flex;
+        flex-wrap: wrap;
+        align-items: stretch;
+        width: calc(100% - 2.5rem);
+        // gap: 1rem;
+
+        &--label {
+            width: 2.5rem;
+            // writing-mode: vertical-rl; /* Rotates text 90° clockwise */
+            // transform: rotate(180deg); /* Flips to be 90° counterclockwise */
+            transform: rotate(-90deg); /* Flips to be 90° counterclockwise */
+            text-transform: uppercase;
+            color: var(--col-blue-100);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            text-align: center;
+            display: inline-flex;
+            justify-content: end;
+            height: auto; /* Let content decide height */
+            min-height: unset; /* Remove forced height */
+            white-space: nowrap; /* Keep text in one line */
+            align-self: flex-start;
+        }
+    }
+
+    &__office {
+        // flex: 1; // Ensure all office blocks are equal width
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        border-left: 1px solid var(--col-blue-100);
+        padding-inline: 1rem;
+    }
+    &__title {
+        font-size: var(--fs-500);
+    }
+    &__phone {
+        font-size: var(--fs-400);
+    }
+    &__address {
+        line-height: 2;
+        padding-bottom: 0.5rem;
+    }
+
+    .colophon {
+        font-size: var(--fs-200);
+    }
+
+    .cb {
+        content: url(../img/cb-mono.png);
+        transition: opacity var(--transition);
+        &:hover {
+            opacity: 0.8;
+        }
+    }
+}

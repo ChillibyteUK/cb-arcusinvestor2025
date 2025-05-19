@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="Layer_2" data-name="Layer 2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 55.09 55.09">
+  <defs>
+    <style>
+      .cls-1 {
+        stroke-width: 1.31px;
+      }
+
+      .cls-1, .cls-2 {
+        fill: none;
+        stroke: #fff;
+        stroke-miterlimit: 10;
+      }
+
+      .cls-2 {
+        stroke-width: 1.5px;
+      }
+    </style>
+  </defs>
+  <g id="Main_Layout_-_mono_image_masking_optional" data-name="Main Layout - mono image masking optional">
+    <path class="cls-2" d="m54.34,27.54c0,14.8-12,26.79-26.79,26.79S.75,42.34.75,27.54,12.75.75,27.54.75s26.79,12,26.79,26.79Z"/>
+    <path class="cls-2" d="m33.07,14.29c0,3.05-2.47,5.53-5.52,5.53s-5.53-2.47-5.53-5.53,2.47-5.53,5.53-5.53,5.52,2.47,5.52,5.53Z"/>
+    <path class="cls-2" d="m40.8,33.07c-3.05,0-5.53-2.47-5.53-5.52s2.47-5.53,5.53-5.53,5.53,2.47,5.53,5.53-2.47,5.52-5.53,5.52Z"/>
+    <path class="cls-2" d="m22.02,40.8c0-3.05,2.47-5.53,5.52-5.53s5.53,2.47,5.53,5.53-2.47,5.53-5.53,5.53-5.52-2.47-5.52-5.53Z"/>
+    <path class="cls-2" d="m14.29,22.02c3.05,0,5.53,2.47,5.53,5.52s-2.47,5.53-5.53,5.53-5.53-2.47-5.53-5.53,2.47-5.52,5.53-5.52Z"/>
+    <line class="cls-1" x1="23.38" y1="37.48" x2="17.68" y2="31.78"/>
+    <line class="cls-1" x1="37.24" y1="31.95" x2="31.78" y2="37.41"/>
+    <line class="cls-1" x1="31.94" y1="17.84" x2="37.32" y2="23.21"/>
+    <line class="cls-1" x1="17.72" y1="23.27" x2="23.18" y2="17.81"/>
+  </g>
+</svg>

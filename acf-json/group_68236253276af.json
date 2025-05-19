@@ -1,0 +1,94 @@
+{
+    "key": "group_68236253276af",
+    "title": "User Account Metadata",
+    "fields": [
+        {
+            "key": "field_68236253f1405",
+            "label": "Account Expiry Date",
+            "name": "account_expiry_date",
+            "aria-label": "",
+            "type": "date_picker",
+            "instructions": "",
+            "required": 0,
+            "conditional_logic": 0,
+            "wrapper": {
+                "width": "",
+                "class": "",
+                "id": ""
+            },
+            "display_format": "d/m/Y",
+            "return_format": "Y-m-d",
+            "first_day": 1,
+            "allow_in_bindings": 0
+        },
+        {
+            "key": "field_68236272f1406",
+            "label": "Account Status Note",
+            "name": "account_status_note",
+            "aria-label": "",
+            "type": "textarea",
+            "instructions": "",
+            "required": 0,
+            "conditional_logic": 0,
+            "wrapper": {
+                "width": "",
+                "class": "",
+                "id": ""
+            },
+            "default_value": "",
+            "maxlength": "",
+            "allow_in_bindings": 0,
+            "rows": 3,
+            "placeholder": "",
+            "new_lines": ""
+        },
+        {
+            "key": "field_rml_folder_access",
+            "label": "User Folder Access",
+            "name": "rml_folder_access",
+            "type": "checkbox",
+            "instructions": "Select which Real Media Library folders this user can access.",
+            "required": 0,
+            "conditional_logic": 0,
+            "choices": {},
+            "allow_custom": 0,
+            "default_value": [],
+            "layout": "vertical",
+            "return_format": "value",
+            "parent": "group_68236253276af"
+        }
+    ],
+    "location": [
+        [
+            {
+                "param": "user_form",
+                "operator": "==",
+                "value": "add"
+            }
+        ],
+        [
+            {
+                "param": "user_form",
+                "operator": "==",
+                "value": "edit"
+            }
+        ],
+        [
+            {
+                "param": "user_form",
+                "operator": "==",
+                "value": "register"
+            }
+        ]
+    ],
+    "menu_order": 0,
+    "position": "normal",
+    "style": "default",
+    "label_placement": "top",
+    "instruction_placement": "label",
+    "hide_on_screen": "",
+    "active": true,
+    "description": "",
+    "show_in_rest": 0,
+    "modified": 1747219155
+}

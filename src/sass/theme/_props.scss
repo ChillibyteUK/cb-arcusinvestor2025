@@ -1,0 +1,75 @@
+$col-primary: #5d7f9c;
+$col-dark: #666666;
+$col-darkest: #4a4a4a;
+$col-light: #f2f2f2;
+
+:root {
+    /* === Colours === */
+    --hsl-dark: 0 0% 14%; // black
+    --col-dark: hsl(var(--hsl-dark));
+
+    --hsl-light: 0 0% 98%; // light grey
+    --col-light: hsl(var(--hsl-light));
+
+    --hsl-blue-400: 215 68% 16%; // #0d2444
+    --col-blue-400: hsl(var(--hsl-blue-400));
+
+    --hsl-blue-200: 213 17% 41%; // #57677b
+    --col-blue-200: hsl(var(--hsl-blue-200));
+
+    --hsl-blue-100: 205 14% 68%; // #a3b0b9
+    --col-blue-100: hsl(var(--hsl-blue-100));
+
+    --hsl-red-400: 3 63% 45%; // #bb322a
+    --col-red-400: hsl(var(--hsl-red-400));
+
+    --hsl-gold-400: 32 42% 61%; // #c59e70
+    --col-gold-400: hsl(var(--hsl-gold-400));
+
+    --hsl-grey-400: 213 14% 68%; // #a3b0b9
+    --col-grey-400: hsl(var(--hsl-grey-400));
+
+    --hsl-grey-100: 60 3% 93%; // #EEEEED
+    --col-grey-100: hsl(var(--hsl-grey-100));
+
+    /* === Font Sizes === */
+    --fs-999: 3.583rem;
+    --fs-900: 2.986rem;
+    --fs-800: 2.488rem;
+    --fs-700: 2.074rem;
+    --fs-600: 1.728rem;
+    --fs-550: 1.44rem;
+    --fs-500: 1.2rem;
+    --fs-400: 1rem;
+    --fs-300: 0.833rem;
+    --fs-200: 0.694rem;
+
+    /* === Font Families === */
+    --ff-body: 'Barlow', Tahoma, Geneva, Verdana, sans-serif;
+    --ff-heading: 'MetaSerif', Tahoma, Geneva, Verdana, sans-serif;
+
+    /* === Font Weights === */
+    --fw-400: 400;
+    --fw-500: 500;
+    --fw-700: 700;
+    --fw-800: 800;
+
+    /* === Utilities === */
+    --transition: 250ms ease-out;
+
+    --h-top: 90px;
+    --h-top-desktop: 125px;
+
+    --nav-height: 54.3px;
+
+    --nav-offset-top--hp: 330px;
+    --nav-offset-top: 230px;
+
+    --page-offset-top: 370px;
+    --page-offset-top--hp: 270px;
+}
+
+#complianceModal {
+    --bs-modal-width: min(800px, 90vw);
+    --bs-modal-margin: 6rem;
+}

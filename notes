@@ -1,0 +1,18 @@
+$regions = [
+'Austria' => 'europe-eu',
+'Finland' => 'europe-eu',
+'France' => 'europe-eu',
+'Germany' => 'europe-eu',
+'Hong Kong' => 'hong-kong',
+'Ireland' => 'europe-eu',
+'Italy' => 'europe-eu',
+'Luxembourg' => 'europe-eu',
+'Malaysia' => 'malaysia',
+'The Netherlands' => 'europe-eu',
+'Rest of the World' => 'rest-of-the-world'
+'Singapore' => 'singapore'
+'Spain' => 'europe-eu',
+'Sweden' => 'europe-eu',
+'Switzerland' => 'europe-eu',
+'United Kingdom' => 'united-kingdom',
+];
