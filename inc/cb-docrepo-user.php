@@ -32,10 +32,14 @@ function cb_check_user_expiry( $user ) {
 	$now              = strtotime( current_time( 'Y-m-d' ) );
 
 	if ( $expiry_timestamp && $expiry_timestamp < $now ) {
+		wp_safe_redirect( add_query_arg( 'login', 'expired', home_url( '/portal-login/' ) ) );
+		exit;
+		/*
 		return new WP_Error(
-			'expired_account',
-			__( 'Your account has expired. Please contact the administrator.', 'your-textdomain' )
+		    'expired_account',
+		    'Your account has expired. Please contact the administrator.'
 		);
+		*/
 	}
 
 	return $user;

@@ -40,20 +40,26 @@ if ( isset( $_SERVER['REQUEST_METHOD'] ) && 'POST' === $_SERVER['REQUEST_METHOD'
 
 get_header();
 
+if ( isset( $_GET['login'] ) && 'expired' === $_GET['login'] ) {
+    $error_msg = 'Your account has expired. Please contact the administrator.';
+}
 ?>
 
 <div class="container py-5 mt-5">
 	<h1 class="text-center">Investor Portal Login</h1>
 
-	<?php if ( $error_msg ) : ?>
-		<div class="alert alert-danger" role="alert">
-			<?php
-			echo 'Invalid username or password.';
-			?>
-		</div>
-	<?php endif; ?>
-
 	<form method="post" class="login-form">
+		<?php
+		if ( $error_msg ) {
+			?>
+			<div class="alert alert-danger" role="alert">
+				<?php
+				echo esc_html( $error_msg );
+				?>
+			</div>
+			<?php
+		}
+		?>
 		<?php wp_nonce_field( 'portal_login_form', 'portal_login_nonce' ); ?>
 
 		<div class="mb-3">
