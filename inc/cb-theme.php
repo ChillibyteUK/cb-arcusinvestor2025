@@ -266,6 +266,33 @@ add_action( 'wp_enqueue_scripts', 'cb_theme_enqueue' );
 // add_filter('wp_nav_menu_items', 'add_custom_menu_item', 10, 2);
 // phpcs:enable
 
+
+add_filter(
+	'wpcf7_form_elements',
+	function ( $content ) {
+		return preg_replace_callback(
+			'#<input([^>]+type=["\']submit["\'][^>]*)>#i',
+			function ( $matches ) {
+				// Extract attributes from input.
+				$attributes = $matches[1];
+
+				// Pull out value attribute.
+				if ( preg_match( '/value=["\']([^"\']+)["\']/', $attributes, $value_match ) ) {
+					$label      = $value_match[1];
+					$attributes = preg_replace( '/\s*value=["\'][^"\']+["\']/', '', $attributes );
+				} else {
+					$label = 'Submit';
+				}
+
+				return "<button type=\"submit\" {$attributes}>{$label}</button>";
+			},
+			$content
+		);
+	}
+);
+
+add_filter( 'wpcf7_autop_or_not', '__return_false' );
+
 /**
  * Determines if the block region is applicable based on the session and assigned regions.
  *

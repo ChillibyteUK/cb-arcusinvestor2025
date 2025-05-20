@@ -145,7 +145,12 @@ for (; i < all.length; i++) {
     border-radius: 0;
 }
 
+.wpcf7-form,
 .login-form {
     max-width: 600px;
     margin-inline: auto;
+}
+
+span.wpcf7-spinner {
+    display: block;
 }

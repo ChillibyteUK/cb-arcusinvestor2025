@@ -40,9 +40,15 @@ if ( isset( $_SERVER['REQUEST_METHOD'] ) && 'POST' === $_SERVER['REQUEST_METHOD'
 
 get_header();
 
-if ( isset( $_GET['login'] ) && 'expired' === $_GET['login'] ) {
-    $error_msg = 'Your account has expired. Please contact the administrator.';
+
+if ( isset( $_GET['reset'] ) && 'success' === $_GET['reset'] ) {
+	$error_msg = '<div class="alert alert-success" role="alert">Your password has been reset. Please log in.</div>';
+} elseif ( isset( $_GET['login'] ) && 'failed' === $_GET['login'] ) {
+	$error_msg = '<div class="alert alert-danger" role="alert">Invalid username or password.</div>';
+} elseif ( isset( $_GET['login'] ) && 'expired' === $_GET['login'] ) {
+	$error_msg = '<div class="alert alert-warning" role="alert">Your account has expired. Please contact support.</div>';
 }
+
 ?>
 
 <div class="container py-5 mt-5">
@@ -51,33 +57,33 @@ if ( isset( $_GET['login'] ) && 'expired' === $_GET['login'] ) {
 	<form method="post" class="login-form">
 		<?php
 		if ( $error_msg ) {
-			?>
-			<div class="alert alert-danger" role="alert">
-				<?php
-				echo esc_html( $error_msg );
-				?>
-			</div>
-			<?php
+			echo wp_kses_post( $error_msg );
 		}
 		?>
 		<?php wp_nonce_field( 'portal_login_form', 'portal_login_nonce' ); ?>
 
 		<div class="mb-3">
-			<label for="user_login" class="form-label"><?php esc_html_e( 'Username or Email', 'your-textdomain' ); ?></label>
+			<label for="user_login" class="form-label">Username or Email</label>
 			<input type="text" name="log" id="user_login" class="form-control" required value="<?php echo esc_attr( sanitize_user( wp_unslash( $_POST['log'] ?? '' ) ) ); ?>">
 		</div>
 
 		<div class="mb-3">
-			<label for="user_pass" class="form-label"><?php esc_html_e( 'Password', 'your-textdomain' ); ?></label>
+			<label for="user_pass" class="form-label">Password</label>
 			<input type="password" name="pwd" id="user_pass" class="form-control" required>
 		</div>
 
 		<input type="hidden" name="redirect_to" value="<?php echo esc_url( isset( $_POST['redirect_to'] ) ? esc_url_raw( wp_unslash( $_POST['redirect_to'] ) ) : home_url( '/portal-dashboard' ) ); ?>">
 
 		<div class="text-end">
-			<button type="submit" class="button"><?php esc_html_e( 'Login', 'your-textdomain' ); ?></button>
+			<button type="submit" class="button">Login</button>
 		</div>
 	</form>
+	<div class="text-center my-4">
+		<a href="/request-access/">Request Access</a> | 
+		<a href="/forgot-password/">Forgotten Password</a>
+	</div>
 </div>
+
+
 
 <?php get_footer(); ?>

@@ -11,6 +11,23 @@
 // phpcs:disable WordPress.Security.NonceVerification.Recommended
 // phpcs:disable WordPress.Security.NonceVerification.Missing
 
+add_filter(
+	'authenticate',
+	function ( $user, $username, $password ) {
+		if ( isset( $_POST['log'] ) && ! empty( $_POST['log'] ) && isset( $_POST['pwd'] ) ) {
+			$user = wp_authenticate_username_password( null, $username, $password );
+			if ( is_wp_error( $user ) ) {
+				wp_safe_redirect( add_query_arg( 'login', 'failed', wp_get_referer() ) );
+				exit;
+			}
+		}
+		return $user;
+	},
+	30,
+	3
+);
+
+
 /**
  * Prevent login if the user's account has expired.
  *
@@ -34,31 +51,12 @@ function cb_check_user_expiry( $user ) {
 	if ( $expiry_timestamp && $expiry_timestamp < $now ) {
 		wp_safe_redirect( add_query_arg( 'login', 'expired', home_url( '/portal-login/' ) ) );
 		exit;
-		/*
-		return new WP_Error(
-		    'expired_account',
-		    'Your account has expired. Please contact the administrator.'
-		);
-		*/
 	}
 
 	return $user;
 }
 add_filter( 'wp_authenticate_user', 'cb_check_user_expiry' );
 
-
-/**
- * Redirect failed login back to custom portal login page.
- */
-function cb_login_failed_redirect() {
-	$referrer = wp_get_referer();
-
-	if ( ! empty( $referrer ) && strpos( $referrer, 'portal-login' ) !== false ) {
-		wp_safe_redirect( add_query_arg( 'login', 'failed', $referrer ) );
-		exit;
-	}
-}
-add_action( 'wp_login_failed', 'cb_login_failed_redirect' );
 
 /**
  * Redirect non-logged-in users to the custom login page.
@@ -83,6 +81,9 @@ function cb_redirect_to_portal_login() {
 
 	$excluded_paths = array(
 		'/portal-login/',
+		'/request-access/',
+		'/forgot-password/',
+		'/reset-password/',
 		'/wp-login.php',
 		'/wp-json/',
 		'/wp-cron.php',
@@ -405,9 +406,255 @@ function cb_get_user_rml_folder_ids( $user_id = null ) {
 }
 
 
-// add_action('init', function() {
-// 	if (is_user_logged_in()) {
-// 		$ids = cb_get_user_rml_folder_ids();
-// 		error_log('cb_get_user_rml_folder_ids: ' . print_r($ids, true));
-// 	}
-// });
+// ---------------------- Password Reset --------------------- //
+
+/**
+ * Render the password reset request form.
+ *
+ * This function outputs a form for users to request a password reset.
+ *
+ * @return string The HTML content of the password reset request form.
+ */
+function cb_render_password_reset_request_form() {
+	ob_start();
+
+	?>
+<div class="container">
+	<form method="post" action="" class="login-form">
+		<?php
+		// phpcs:disable WordPress.Security.NonceVerification.Recommended
+		if ( isset( $_GET['reset'] ) && 'sent' === $_GET['reset'] ) {
+			echo '<p class="alert alert-success">Check your email for the reset link.</p>';
+		} elseif ( isset( $_GET['reset'] ) && 'error' === $_GET['reset'] ) {
+			echo '<p class="alert alert-danger">We couldn’t find a user with that email address.</p>';
+		}
+		// phpcs:enable WordPress.Security.NonceVerification.Recommended
+		?>
+		<div class="mb-3">
+			<label for="user_email" class="form-label">Email address</label>
+			<input type="email" class="form-control" id="user_email" name="user_email" required>
+		</div>
+
+		<!-- Honeypot -->
+		<input type="text" name="your_name" style="display:none">
+
+		<?php wp_nonce_field( 'cb_password_reset_request', 'cb_reset_nonce' ); ?>
+		<div class="text-end">
+			<button type="submit" name="cb_password_reset_submit" class="button">Reset Password</button>
+		</div>
+	</form>
+</div>
+	<?php
+
+	return ob_get_clean();
+}
+add_shortcode( 'cb_password_reset_request', 'cb_render_password_reset_request_form' );
+
+add_action(
+	'init',
+	function () {
+		if ( isset( $_POST['cb_password_reset_submit'] ) ) {
+
+			if ( ! empty( $_POST['your_name'] ) ) {
+				// Honeypot triggered.
+				return;
+			}
+
+			if ( ! isset( $_POST['cb_reset_nonce'] ) ||
+				! wp_verify_nonce( wp_unslash( $_POST['cb_reset_nonce'] ), 'cb_password_reset_request' ) ) { // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
+				return;
+			}
+
+			$email = isset( $_POST['user_email'] ) ? sanitize_email( wp_unslash( $_POST['user_email'] ) ) : '';
+			$user  = get_user_by( 'email', $email );
+
+			if ( ! $user ) {
+				wp_safe_redirect( add_query_arg( 'reset', 'error', wp_get_referer() ) );
+				exit;
+			}
+
+			$key       = get_password_reset_key( $user );
+			$reset_url = add_query_arg(
+				array(
+					'key'   => $key,
+					'login' => rawurlencode( $user->user_login ),
+				),
+				home_url( '/reset-password/' )
+			);
+
+			wp_mail(
+				$user->user_email,
+				'Password Reset Request',
+				"Click the following link to reset your password:\n\n" . $reset_url
+			);
+
+			wp_safe_redirect( add_query_arg( 'reset', 'sent', wp_get_referer() ) );
+			exit;
+		}
+	}
+);
+
+/**
+ * Render the password reset form.
+ *
+ * This function generates the HTML for the password reset form, including
+ * fields for the new password and confirmation, and handles error messages.
+ *
+ * @return string The HTML content of the password reset form.
+ */
+function cb_render_password_reset_form() {
+	// phpcs:disable WordPress.Security.NonceVerification.Recommended
+	if ( isset( $_GET['reset'] ) && 'success' === $_GET['reset'] ) {
+		return '<p class="alert alert-success">Your password has been reset successfully. You may now <a href="/portal-login/">log in</a>.</p>';
+	}
+
+	if ( empty( $_GET['key'] ) || empty( $_GET['login'] ) ) {
+		return '<p class="alert alert-danger">Invalid password reset link.</p>';
+	}
+
+	$key   = isset( $_GET['key'] ) ? sanitize_text_field( wp_unslash( $_GET['key'] ) ) : '';
+	$login = isset( $_GET['login'] ) ? sanitize_user( wp_unslash( $_GET['login'] ) ) : '';
+	// phpcs:enable WordPress.Security.NonceVerification.Recommended
+
+	// Validate key/login.
+	$user = check_password_reset_key( $key, $login );
+	if ( is_wp_error( $user ) ) {
+		return '<p class="alert alert-danger">This password reset link is invalid or has expired.</p>';
+	}
+
+	// Begin building output.
+	ob_start();
+
+	?>
+
+	<form method="post" class="cb-password-reset-form login-form">
+		<?php
+		// Display errors from query string.
+		$error_msg = '';
+		// phpcs:disable WordPress.Security.NonceVerification.Recommended
+		if ( isset( $_GET['reset_error'] ) ) {
+			switch ( $_GET['reset_error'] ) {
+				case 'invalid_nonce':
+					$error_msg = 'Security check failed. Please try again.';
+					break;
+				case 'invalid_key':
+					$error_msg = 'Invalid or expired reset key.';
+					break;
+				case 'mismatch':
+					$error_msg = 'Passwords do not match.';
+					break;
+				case 'weak':
+					$error_msg = 'Password must be at least 8 characters and contain uppercase, lowercase, and a number.';
+					break;
+				default:
+					$error_msg = 'There was a problem resetting your password.';
+					break;
+			}
+
+			echo '<p class="alert alert-danger">' . esc_html( $error_msg ) . '</p>';
+		}
+		// phpcs:enable WordPress.Security.NonceVerification.Recommended
+		?>
+		<input type="hidden" name="rp_key" value="<?php echo esc_attr( $key ); ?>">
+		<input type="hidden" name="rp_login" value="<?php echo esc_attr( $login ); ?>">
+		<?php wp_nonce_field( 'cb_password_reset_confirm', 'cb_confirm_nonce' ); ?>
+
+		<div class="mb-3">
+			<label for="pass1" class="form-label">New Password</label>
+			<input type="password" name="pass1" id="pass1" class="form-control" required>
+		</div>
+
+		<div class="mb-3">
+			<label for="pass2" class="form-label">Confirm New Password</label>
+			<input type="password" name="pass2" id="pass2" class="form-control" required>
+		</div>
+
+		<div class="text-end">
+			<button type="submit" name="cb_password_reset_confirm" class="button">Set New Password</button>
+		</div>
+	</form>
+
+	<?php
+	return ob_get_clean();
+}
+
+add_shortcode( 'cb_password_reset_confirm', 'cb_render_password_reset_form' );
+
+add_action(
+	'init',
+	function () {
+		if ( isset( $_POST['cb_password_reset_confirm'] ) ) {
+			if ( ! isset( $_POST['cb_confirm_nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['cb_confirm_nonce'] ) ), 'cb_password_reset_confirm' ) ) {
+				$referer = wp_get_referer() ? wp_get_referer() : home_url( '/portal-login/' );
+				wp_safe_redirect( add_query_arg( 'reset_error', 'invalid_nonce', $referer ) );
+				exit;
+			}
+
+			$rp_key   = isset( $_POST['rp_key'] ) ? sanitize_text_field( wp_unslash( $_POST['rp_key'] ) ) : '';
+			$rp_login = isset( $_POST['rp_login'] ) ? sanitize_user( wp_unslash( $_POST['rp_login'] ) ) : '';
+			$user     = check_password_reset_key( $rp_key, $rp_login );
+
+			if ( is_wp_error( $user ) ) {
+				wp_safe_redirect( add_query_arg( 'reset_error', 'invalid_key', wp_get_referer() ) );
+				exit;
+			}
+
+			$password = isset( $_POST['pass1'] ) ? sanitize_text_field( wp_unslash( $_POST['pass1'] ) ) : '';
+			$confirm  = isset( $_POST['pass2'] ) ? sanitize_text_field( wp_unslash( $_POST['pass2'] ) ) : '';
+
+			if ( $password !== $confirm ) {
+				wp_safe_redirect( add_query_arg( 'reset_error', 'mismatch', wp_get_referer() ) );
+				exit;
+			}
+
+			if ( strlen( $password ) < 8 ||
+				! preg_match( '/[a-z]/', $password ) ||
+				! preg_match( '/[A-Z]/', $password ) ||
+				! preg_match( '/[0-9]/', $password ) ) {
+				wp_safe_redirect( add_query_arg( 'reset_error', 'weak', wp_get_referer() ) );
+				exit;
+			}
+
+			reset_password( $user, $password );
+			wp_safe_redirect( home_url( '/portal-login/?reset=success' ) );
+			exit;
+		}
+	}
+);
+
+add_action(
+	'init',
+	function () {
+		if ( isset( $_POST['cb_login_submit'] ) ) {
+
+			if ( ! empty( $_POST['your_name'] ) ) {
+				// Honeypot triggered.
+				return;
+			}
+
+			if (
+				! isset( $_POST['cb_login_nonce'] )
+				|| ! wp_verify_nonce( wp_unslash( $_POST['cb_login_nonce'] ), 'cb_login_action' ) // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
+			) {
+				wp_safe_redirect( add_query_arg( 'login', 'invalid_nonce', wp_get_referer() ) );
+				exit;
+			}
+
+			$credentials = array(
+				'user_login'    => isset( $_POST['log'] ) ? sanitize_user( wp_unslash( $_POST['log'] ) ) : '',
+				'user_password' => isset( $_POST['pwd'] ) ? sanitize_text_field( wp_unslash( $_POST['pwd'] ) ) : '',
+				'remember'      => true,
+			);
+
+			$user = wp_signon( $credentials );
+
+			if ( is_wp_error( $user ) ) {
+				wp_safe_redirect( add_query_arg( 'login', 'failed', wp_get_referer() ) );
+				exit;
+			}
+
+			wp_safe_redirect( home_url( '/portal-dashboard/' ) );
+			exit;
+		}
+	}
+);
