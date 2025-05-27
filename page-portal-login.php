@@ -52,7 +52,7 @@ if ( isset( $_GET['reset'] ) && 'success' === $_GET['reset'] ) {
 ?>
 
 <div class="container py-5 mt-5">
-	<h1 class="text-center">Investor Portal Login</h1>
+	<h1 class="text-center">Client Portal Login</h1>
 
 	<form method="post" class="login-form">
 		<?php

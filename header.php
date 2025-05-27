@@ -122,7 +122,7 @@ defined( 'ABSPATH' ) || exit;
 			<?php
 			if ( is_user_logged_in() ) {
 				echo '<div class="d-flex w-100 justify-content-between align-items-center gap-2 px-3 py-2">';
-				echo '<h1 class="h3 fs-500 mb-0">Investor Portal</h1>';
+				echo '<h1 class="h3 fs-500 mb-0">Client Portal</h1>';
 				$logout_url = wp_logout_url( home_url( '/portal-login/' ) );
 				echo '<a href="' . esc_url( $logout_url ) . '" class="button">Log out</a>';
 				echo '</div>';
