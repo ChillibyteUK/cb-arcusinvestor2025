@@ -9,6 +9,10 @@
  */
 
 require_once CB_THEME_DIR . '/inc/cb-docrepo-user.php';
+require_once CB_THEME_DIR . '/inc/cb-docrepo-admin.php';
+
+// phpcs:disable WordPress.Security.NonceVerification.Recommended
+// phpcs:disable WordPress.Security.NonceVerification.Missing
 
 // Register the proxy endpoint.
 add_action(
@@ -35,19 +39,45 @@ add_action(
 			if ( $file_id && ! empty( $allowed_folders ) ) {
 				global $wpdb;
 
-				$user_id = get_current_user_id();
+				$user_id    = get_current_user_id();
+				$file_title = get_the_title( $file_id );
+                $file_name  = basename( get_attached_file( $file_id ) );
 
+                // Retrieve folder name.
+				$cache_key   = 'cb_folder_name_' . $file_id;
+				$folder_name = wp_cache_get( $cache_key, 'cb_download_proxy' );
+
+				if ( false === $folder_name ) {
+					// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+					$folder_name = $wpdb->get_var(
+						$wpdb->prepare(
+							"SELECT rml.name 
+							FROM {$wpdb->prefix}realmedialibrary_posts rml_posts
+							LEFT JOIN {$wpdb->prefix}realmedialibrary rml ON rml_posts.fid = rml.id
+							WHERE rml_posts.attachment = %d LIMIT 1",
+							$file_id
+						)
+					);
+					wp_cache_set( $cache_key, $folder_name, 'cb_download_proxy' );
+				}
+
+				// phpcs:ignore WordPress.WP.Capabilities.Unknown
 				if ( user_can( $user_id, 'portal_user' ) ) {
+					// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
 					$wpdb->insert(
 						$wpdb->prefix . 'cb_download_log',
 						array(
 							'user_id'       => $user_id,
 							'attachment_id' => $file_id,
+							'file_title'    => $file_title,
+                            'file_name'     => $file_name,
+                            'folder_name'   => $folder_name,
 							'action'        => $mode,
 						)
 					);
 				}
 
+				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
 				$folder_id = $wpdb->get_var(
 					$wpdb->prepare(
 						"SELECT fid FROM {$wpdb->prefix}realmedialibrary_posts WHERE attachment = %d LIMIT 1",
@@ -83,46 +113,68 @@ add_action(
 	}
 );
 
+/**
+ * Filter attachments by 'docstatus' on the front end.
+ *
+ * @param WP_Query $query The WP_Query instance.
+ */
+function cb_filter_attachments_by_docstatus( $query ) {
+    if ( ! is_admin() && $query->is_main_query() && $query->get( 'post_type' ) === 'attachment' ) {
+        $meta_query = array(
+            array(
+                'key'     => 'docstatus',
+                'value'   => 'approved',
+                'compare' => '=',
+            ),
+        );
+        $query->set( 'meta_query', $meta_query );
+    }
+}
+add_action( 'pre_get_posts', 'cb_filter_attachments_by_docstatus' );
+
 // ----------------- LOGGING ----------------- //
 
 /**
- * Creates the download log table in the database.
+ * Creates the download log table in the database with updated columns.
  *
- * This function sets up a table to log user download actions, including
- * user ID, attachment ID, action type, and timestamp.
+ * This function sets up a table to log user actions, including user ID, attachment ID,
+ * file title, file name, action type, and timestamp.
  */
 function cb_ensure_download_log_table() {
-	global $wpdb;
+    global $wpdb;
 
-	$table_name = $wpdb->prefix . 'cb_download_log';
+    $table_name = $wpdb->prefix . 'cb_download_log';
 
-	// Check if the table exists first.
-	if ( $wpdb->get_var( "SHOW TABLES LIKE '{$table_name}'" ) !== $table_name ) {
-		// If not, create it.
-		$charset_collate = $wpdb->get_charset_collate();
+    // Define the table schema.
+    $charset_collate = $wpdb->get_charset_collate();
 
-		$sql = "CREATE TABLE $table_name (
-			id BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT,
-			user_id BIGINT(20) UNSIGNED NOT NULL,
-			attachment_id BIGINT(20) UNSIGNED DEFAULT NULL,
-			action VARCHAR(20) NOT NULL,
-			timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
-			PRIMARY KEY (id)
-		) $charset_collate;";
+    $sql = "CREATE TABLE $table_name (
+        id BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+        user_id BIGINT(20) UNSIGNED NOT NULL,
+        attachment_id BIGINT(20) UNSIGNED DEFAULT NULL,
+        file_title VARCHAR(255) DEFAULT NULL,
+        file_name VARCHAR(255) DEFAULT NULL,
+		folder_name VARCHAR(255) DEFAULT NULL,
+        action VARCHAR(20) NOT NULL,
+        timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+		notes TEXT DEFAULT NULL,
+        PRIMARY KEY (id)
+    ) $charset_collate;";
 
-		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
-		dbDelta( $sql );
-	}
+    // Execute the table creation.
+    require_once ABSPATH . 'wp-admin/includes/upgrade.php';
+    dbDelta( $sql );
 }
-
 add_action( 'after_setup_theme', 'cb_ensure_download_log_table' );
 
 
 add_action(
 	'wp_login',
 	function ( $user_login, $user ) {
+		// phpcs:ignore WordPress.WP.Capabilities.Unknown
 		if ( user_can( $user, 'portal_user' ) ) {
 			global $wpdb;
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
 			$wpdb->insert(
 				$wpdb->prefix . 'cb_download_log',
 				array(
@@ -136,50 +188,159 @@ add_action(
 	2
 );
 
-// Logging admin bits.
-add_action(
-	'admin_menu',
-	function () {
-		add_menu_page(
-			'Portal Logs',
-			'Portal Logs',
-			'manage_options',
-			'cb-portal-logs',
-			'cb_render_logs_admin_page',
-			'dashicons-media-spreadsheet',
-			25
-		);
-	}
-);
 
 /**
- * Renders the admin page for Portal Logs.
+ * Log folder creation.
  *
- * This function outputs the HTML for the Portal Logs admin page,
- * including options to export login activity, user activity, and file access logs.
+ * @param int    $folder_id   The ID of the created folder.
+ * @param string $folder_name The name of the created folder.
  */
-function cb_render_logs_admin_page() {
-	?>
-	<div class="wrap">
-		<h1>Portal Logs</h1>
-		<form method="post">
-			<p><button name="cb_export_logins" class="button button-primary">Export Login Activity</button></p>
-			<p>
-				<select name="cb_user_id">
-					<option value="">Select User</option>
-					<?php
-					foreach ( get_users( array( 'role__in' => array( 'portal_user' ) ) ) as $user ) {
-						echo '<option value="' . esc_attr( $user->ID ) . '">' . esc_html( $user->display_name ) . '</option>';
-					}
-					?>
-				</select>
-				<button name="cb_export_user_activity" class="button">Export User Activity</button>
-			</p>
-			<p><button name="cb_export_file_access" class="button">Export File Access Log</button></p>
-		</form>
-	</div>
-	<?php
+function cb_log_folder_creation( $folder_id, $folder_name ) {
+    global $wpdb;
+
+    // Log the folder creation action.
+	// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+    $wpdb->insert(
+        $wpdb->prefix . 'cb_download_log',
+        array(
+            'user_id'     => get_current_user_id(),
+            'action'      => 'folder_create',
+            'folder_name' => $folder_name,
+            'notes'       => "Folder created: {$folder_name}",
+            'timestamp'   => current_time( 'mysql' ),
+        )
+    );
 }
+add_action( 'RML/Folder/Created', 'cb_log_folder_creation', 10, 2 );
+
+/**
+ * Log folder renaming.
+ *
+ * @param int    $folder_id The ID of the renamed folder.
+ * @param string $old_name  The old name of the folder.
+ * @param string $new_name  The new name of the folder.
+ */
+function cb_log_folder_renaming( $folder_id, $old_name, $new_name ) {
+    global $wpdb;
+
+	// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+    $wpdb->insert(
+        $wpdb->prefix . 'cb_download_log',
+        array(
+            'user_id'     => get_current_user_id(),
+            'action'      => 'folder_rename',
+            'folder_name' => $new_name,
+            'notes'       => "Folder renamed from '{$old_name}' to '{$new_name}'",
+            'timestamp'   => current_time( 'mysql' ),
+        )
+    );
+}
+add_action( 'RML/Folder/Renamed', 'cb_log_folder_renaming', 10, 3 );
+
+/**
+ * Log folder deletion.
+ *
+ * @param int   $folder_id   The ID of the deleted folder.
+ * @param mixed $folder_name The name of the deleted folder (string or object).
+ */
+function cb_log_folder_deletion( $folder_id, $folder_name ) {
+    global $wpdb;
+
+    // Ensure folder_name is a string.
+    if ( is_object( $folder_name ) ) {
+        $folder_name = isset( $folder_name->name ) ? $folder_name->name : 'Unknown Folder';
+    }
+
+    // Log the folder deletion action.
+	// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+    $wpdb->insert(
+        $wpdb->prefix . 'cb_download_log',
+        array(
+            'user_id'     => get_current_user_id(),
+            'action'      => 'folder_delete',
+            'folder_name' => $folder_name,
+            'notes'       => "Folder deleted: {$folder_name}",
+            'timestamp'   => current_time( 'mysql' ),
+        )
+    );
+}
+add_action( 'RML/Folder/Deleted', 'cb_log_folder_deletion', 10, 2 );
+
+
+/**
+ * Log folder changes for attachments.
+ *
+ * @param int $attachment_id The ID of the attachment being moved.
+ * @param int $old_folder_id The ID of the old folder.
+ * @param int $new_folder_id The ID of the new folder.
+ */
+function cb_log_folder_change( $attachment_id, $old_folder_id, $new_folder_id ) {
+    global $wpdb;
+
+    // Retrieve folder names.
+
+	$cache_key       = 'old_folder_name_' . $old_folder_id;
+	$old_folder_name = wp_cache_get( $cache_key );
+
+	if ( false === $old_folder_name ) {
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+		$old_folder_name = $wpdb->get_var(
+			$wpdb->prepare(
+				"SELECT name FROM {$wpdb->prefix}realmedialibrary WHERE id = %d LIMIT 1",
+				$old_folder_id
+			)
+		);
+		wp_cache_set( $cache_key, $old_folder_name );
+	}
+
+	$cache_key       = 'new_folder_name_' . $new_folder_id;
+	$new_folder_name = wp_cache_get( $cache_key );
+
+	if ( false === $new_folder_name ) {
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+		$new_folder_name = $wpdb->get_var(
+			$wpdb->prepare(
+				"SELECT name FROM {$wpdb->prefix}realmedialibrary WHERE id = %d LIMIT 1",
+				$new_folder_id
+			)
+		);
+		wp_cache_set( $cache_key, $new_folder_name );
+	}
+
+	// If folder names are not found, use default values.
+	if ( ! $old_folder_name ) {
+		$old_folder_name = 'Unorganized';
+	}
+	if ( ! $new_folder_name ) {
+		$new_folder_name = 'Unorganized';
+	}
+
+	if ( $old_folder_name === $new_folder_name ) {
+		// If the folder names are the same, no need to log.
+		return;
+	}
+
+    // Retrieve file details.
+    $file_title = get_the_title( $attachment_id );
+    $file_name  = basename( get_attached_file( $attachment_id ) );
+
+    // Log the folder change action.
+	// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+    $wpdb->insert(
+        $wpdb->prefix . 'cb_download_log',
+        array(
+            'user_id'       => get_current_user_id(),
+            'attachment_id' => $attachment_id,
+            'file_title'    => $file_title,
+            'file_name'     => $file_name,
+            'folder_name'   => $new_folder_name,
+            'action'        => 'folder_change',
+			'notes'         => "File moved from '{$old_folder_name}' to '{$new_folder_name}'",
+            'timestamp'     => current_time( 'mysql' ),
+        )
+    );
+}
+add_action( 'RML/Item/Moved', 'cb_log_folder_change', 10, 3 );
 
 /**
  * Handles the export of CSV files for different log types.
@@ -191,45 +352,63 @@ add_action(
 	'admin_init',
 	function () {
 		global $wpdb;
-		$table = $wpdb->prefix . 'cb_download_log';
 
 		if ( isset( $_POST['cb_export_logins'] ) ) {
-			$results = $wpdb->get_results(
-				"
-				SELECT 
-					l.*,
-					u.user_login,
-					u.user_email,
-					u.display_name
-				FROM {$table} l
-				LEFT JOIN {$wpdb->users} u ON l.user_id = u.ID
-				WHERE l.action = 'login'
-				ORDER BY l.timestamp DESC
-				",
-				ARRAY_A
-			);
+			$table = esc_sql( $wpdb->prefix . 'cb_download_log' );
+
+			$cache_key = 'cb_login_log_data';
+			$results   = wp_cache_get( $cache_key );
+
+			if ( false === $results ) {
+				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+				$results = $wpdb->get_results(
+					"
+					SELECT 
+						l.user_id,
+						u.user_login,
+						u.user_email,
+						u.display_name,
+						l.action,
+						l.timestamp
+					FROM {$wpdb->prefix}cb_download_log l
+					LEFT JOIN {$wpdb->users} u ON l.user_id = u.ID
+					WHERE l.action = 'login'
+					ORDER BY l.timestamp DESC
+					",
+					ARRAY_A
+				);
+				wp_cache_set( $cache_key, $results );
+			}
 
 			cb_export_csv( $results, 'login-log.csv' );
 		}
+
+		$table = esc_sql( $wpdb->prefix . 'cb_download_log' );
 
 		if ( isset( $_POST['cb_export_user_activity'] ) ) {
 			if ( ! empty( $_POST['cb_user_id'] ) ) {
 				$user_id = intval( $_POST['cb_user_id'] );
 
+				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
 				$results = $wpdb->get_results(
 					$wpdb->prepare(
 						"
 						SELECT 
-							l.*,
-							p.post_title AS attachment_title,
-							REPLACE(pm.meta_value, %s, '') AS attachment_filename
-						FROM {$table} l
-						LEFT JOIN {$wpdb->posts} p ON l.attachment_id = p.ID
-						LEFT JOIN {$wpdb->postmeta} pm ON p.ID = pm.post_id AND pm.meta_key = '_wp_attached_file'
+							l.user_id,
+							u.user_login,
+							u.user_email,
+							u.display_name,
+							l.folder_name,
+							l.file_title,
+							l.file_name,
+							l.action,
+							l.notes,
+							l.timestamp
+						FROM {$wpdb->prefix}cb_download_log l
+						LEFT JOIN {$wpdb->users} u ON l.user_id = u.ID
 						WHERE l.user_id = %d
 						ORDER BY l.timestamp DESC
 						",
-						'wp-content/uploads/', // optional: strip upload path prefix
 						$user_id
 					),
 					ARRAY_A
@@ -240,36 +419,27 @@ add_action(
 		}
 
 		if ( isset( $_POST['cb_export_file_access'] ) ) {
-			$raw_results = $wpdb->get_results(
-				"
-				SELECT 
-					l.*,
-					u.user_login,
-					u.user_email,
-					u.display_name
-				FROM {$table} l
-				LEFT JOIN {$wpdb->users} u ON l.user_id = u.ID
-				WHERE l.attachment_id IS NOT NULL
-				ORDER BY l.timestamp DESC
-				",
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery 
+			$results = $wpdb->get_results(
+				$wpdb->prepare(
+					"
+					SELECT 
+						l.user_id,
+						u.user_login,
+						u.user_email,
+						u.display_name,
+						l.folder_name,
+						l.file_title,
+						l.file_name,
+						l.action,
+						l.timestamp
+					FROM {$wpdb->prefix}cb_download_log l
+					LEFT JOIN {$wpdb->users} u ON l.user_id = u.ID
+					ORDER BY l.timestamp DESC
+					"
+				),
 				ARRAY_A
 			);
-
-			$results = array();
-
-			foreach ( $raw_results as $row ) {
-				if ( ! empty( $row['attachment_id'] ) ) {
-					$post = get_post( $row['attachment_id'] );
-					if ( $post && 'attachment' === $post->post_type ) {
-						$row['file_title'] = $post->post_title;
-						$row['file_name']  = basename( get_attached_file( $post->ID ) );
-					} else {
-						$row['file_title'] = '(Unknown)';
-						$row['file_name']  = '(Missing)';
-					}
-				}
-				$results[] = $row;
-			}
 
 			cb_export_csv( $results, 'file-access-log.csv' );
 		}

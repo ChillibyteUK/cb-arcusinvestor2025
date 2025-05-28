@@ -94,6 +94,13 @@ $allowed_folders = cb_get_user_rml_folder_ids();
 						'posts_per_page' => -1,
 						'orderby'        => 'title',
 						'order'          => 'ASC',
+						'meta_query'     => array(
+							array(
+								'key'     => 'docstatus',
+								'value'   => 'approved',
+								'compare' => '=',
+							),
+						),
 					)
 				);
 
@@ -118,6 +125,7 @@ $allowed_folders = cb_get_user_rml_folder_ids();
 							$icon       = 'fa-regular fa-file-word';
 							$icon_class = 'text-primary';
 						}
+
 						?>
 						<li class="list-group-item d-flex justify-content-between align-items-center" 
 							data-ext="<?= esc_attr( $ext ); ?>"
