@@ -216,14 +216,18 @@ add_action( 'RML/Folder/Created', 'cb_log_folder_creation', 10, 2 );
 /**
  * Log folder renaming.
  *
- * @param int    $folder_id The ID of the renamed folder.
- * @param string $old_name  The old name of the folder.
  * @param string $new_name  The new name of the folder.
+ * @param object $folder    The folder object being renamed.
+ * @param object $old_data  The old data of the folder, including the old name.
  */
-function cb_log_folder_renaming( $folder_id, $old_name, $new_name ) {
+function cb_log_folder_renaming( $new_name, $folder, $old_data ) {
     global $wpdb;
 
-	// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+    // Extract the old name from the old data object.
+    $old_name = isset( $old_data->name ) ? $old_data->name : 'Unknown Folder';
+
+    // Log the folder renaming action.
+    // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
     $wpdb->insert(
         $wpdb->prefix . 'cb_download_log',
         array(
