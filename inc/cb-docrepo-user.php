@@ -354,32 +354,146 @@ add_action( 'init', 'cb_add_portal_user_role' );
 
 // --------------------- User Library Access --------------------- //
 
+add_filter(
+    'acf/load_field/name=rml_folder_access',
+    function ( $field ) {
+        if ( ! function_exists( 'wp_rml_objects' ) ) {
+            error_log( 'RML: wp_rml_objects() not available' );
+            return $field;
+        }
+
+        $field['choices'] = array();
+
+        $folders = wp_rml_objects();
+        if ( empty( $folders ) ) {
+            error_log( 'RML: No folders returned' );
+            return $field;
+        }
+
+        // Build hierarchical choices.
+        $field['choices'] = cb_build_folder_hierarchy_with_parents( $folders );
+
+        return $field;
+    }
+);
+
+/**
+ * Build a hierarchical folder structure for ACF choices, ensuring parent folders are included.
+ *
+ * @param array $folders Array of folder objects from wp_rml_objects().
+ * @return array Hierarchical folder choices.
+ */
+function cb_build_folder_hierarchy_with_parents( $folders ) {
+    $hierarchy = array();
+
+    // Organize folders by parent ID.
+    $folders_by_parent = array();
+    $folder_parents    = array(); // Map folder ID to its parent ID.
+    foreach ( $folders as $folder ) {
+        if ( method_exists( $folder, 'getParent' ) && method_exists( $folder, 'getId' ) ) {
+            $parent_id = $folder->getParent();
+            $folder_id = $folder->getId();
+            $folders_by_parent[ $parent_id ][] = $folder;
+            $folder_parents[ $folder_id ] = $parent_id;
+        }
+    }
+
+    // Recursive function to build the hierarchy.
+    $build_hierarchy = function ( $parent_id, $level = 0 ) use ( &$build_hierarchy, &$folders_by_parent ) {
+        $choices = array();
+
+        if ( isset( $folders_by_parent[ $parent_id ] ) ) {
+            foreach ( $folders_by_parent[ $parent_id ] as $folder ) {
+                $folder_id   = $folder->getId();
+                $folder_name = method_exists( $folder, 'getName' ) ? $folder->getName() : 'Unnamed Folder';
+
+                // Add the folder with indentation based on its level.
+                $choices[ $folder_id ] = str_repeat( '--', $level ) . ' ' . $folder_name;
+
+                // Recursively add subfolders.
+                $choices += $build_hierarchy( $folder_id, $level + 1 );
+            }
+        }
+
+        return $choices;
+    };
+
+    // Start building the hierarchy from the root (parent ID = -1).
+    $hierarchy = $build_hierarchy( -1 );
+
+    // Ensure parent folders are included for any selected sub-folders.
+    $hierarchy = cb_include_parent_folders( $hierarchy, $folder_parents );
+
+    return $hierarchy;
+}
+
+/**
+ * Ensure parent folders are included for any selected sub-folders.
+ *
+ * @param array $hierarchy      The hierarchical folder choices.
+ * @param array $folder_parents Map of folder IDs to their parent IDs.
+ * @return array Updated hierarchical folder choices.
+ */
+function cb_include_parent_folders( $hierarchy, $folder_parents ) {
+    $updated_hierarchy = $hierarchy;
+
+    foreach ( $hierarchy as $folder_id => $folder_name ) {
+        $current_folder = $folder_id;
+
+        // Traverse up the parent chain and include all parent folders.
+        while ( isset( $folder_parents[ $current_folder ] ) && $folder_parents[ $current_folder ] !== -1 ) {
+            $parent_id = $folder_parents[ $current_folder ];
+
+            // If the parent is not already in the hierarchy, add it.
+            if ( ! isset( $updated_hierarchy[ $parent_id ] ) ) {
+                $updated_hierarchy[ $parent_id ] = $hierarchy[ $parent_id ] ?? 'Unnamed Parent Folder';
+            }
+
+            $current_folder = $parent_id;
+        }
+    }
+
+    return $updated_hierarchy;
+}
 
 add_filter(
-	'acf/load_field/name=rml_folder_access',
-	function ( $field ) {
-		if ( ! function_exists( 'wp_rml_objects' ) ) {
-			error_log( 'RML: wp_rml_objects() not available' );
-			return $field;
-		}
+    'acf/update_value/name=rml_folder_access',
+    function ( $value, $post_id, $field ) {
+        if ( ! function_exists( 'wp_rml_objects' ) ) {
+            return $value;
+        }
 
-		$field['choices'] = array();
+        // Get all folders and their parent relationships.
+        $folders = wp_rml_objects();
+        $folder_parents = array();
 
-		$folders = wp_rml_objects();
-		if ( empty( $folders ) ) {
-			error_log( 'RML: No folders returned' );
-			return $field;
-		}
+        foreach ( $folders as $folder ) {
+            if ( method_exists( $folder, 'getParent' ) && method_exists( $folder, 'getId' ) ) {
+                $folder_id = $folder->getId();
+                $parent_id = $folder->getParent();
+                $folder_parents[ $folder_id ] = $parent_id;
+            }
+        }
 
-		foreach ( $folders as $folder ) {
-			// Only list real folders (exclude smart folders etc.).
-			if ( method_exists( $folder, 'getId' ) && method_exists( $folder, 'getName' ) ) {
-				$field['choices'][ (string) $folder->getId() ] = $folder->getName();
-			}
-		}
+        // Ensure parent folders are included in the saved value.
+        $updated_value = (array) $value; // Ensure it's an array.
+        foreach ( $value as $folder_id ) {
+            $current_folder = $folder_id;
 
-		return $field;
-	}
+            // Traverse up the parent chain and include all parent folders.
+            while ( isset( $folder_parents[ $current_folder ] ) && $folder_parents[ $current_folder ] !== -1 ) {
+                $parent_id = $folder_parents[ $current_folder ];
+                if ( ! in_array( $parent_id, $updated_value, true ) ) {
+                    $updated_value[] = $parent_id;
+                }
+                $current_folder = $parent_id;
+            }
+        }
+
+        return $updated_value;
+    },
+    10,
+    3
 );
 
 // phpcs:enable WordPress.Security.NonceVerification.Recommended
@@ -392,17 +506,18 @@ add_filter(
  * @return int[] Array of folder IDs the user can access.
  */
 function cb_get_user_rml_folder_ids( $user_id = null ) {
-	if ( ! $user_id ) {
-		$user_id = get_current_user_id();
-	}
+    if ( ! $user_id ) {
+        $user_id = get_current_user_id();
+    }
 
-	$folder_ids = get_field( 'rml_folder_access', 'user_' . $user_id );
+    $folder_ids = get_field( 'rml_folder_access', 'user_' . $user_id );
 
-	if ( is_array( $folder_ids ) ) {
-		return array_map( 'intval', $folder_ids );
-	}
+    // Ensure $folder_ids is always an array.
+    if ( ! is_array( $folder_ids ) ) {
+        $folder_ids = array();
+    }
 
-	return array();
+    return array_map( 'intval', $folder_ids );
 }
 
 

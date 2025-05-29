@@ -489,3 +489,82 @@ add_action(
 		}
 	}
 );
+
+
+// ----------------- SUB FOLDER HELPERS ----------------- //
+
+
+/**
+ * Render a list of files.
+ *
+ * @param array  $attachment_ids Array of attachment IDs.
+ * @param string $heading        Optional heading for the file list.
+ */
+function cb_render_files_list( $attachment_ids, $heading = '' ) {
+    $attachments = get_posts(
+        array(
+            'post_type'      => 'attachment',
+            'post_status'    => 'inherit',
+            'post__in'       => $attachment_ids,
+            'posts_per_page' => -1,
+            'orderby'        => 'title',
+            'order'          => 'ASC',
+            'meta_query'     => array(
+                array(
+                    'key'     => 'docstatus',
+                    'value'   => 'approved',
+                    'compare' => '=',
+                ),
+            ),
+        )
+    );
+
+    if ( $attachments ) {
+        if ( $heading ) {
+            echo '<h4 class="mt-4">' . esc_html( $heading ) . '</h4>';
+        }
+
+        foreach ( $attachments as $doc ) {
+            $url         = wp_get_attachment_url( $doc->ID );
+            $filename    = basename( get_attached_file( $doc->ID ) );
+            $ext         = strtoupper( pathinfo( $filename, PATHINFO_EXTENSION ) );
+            $size        = size_format( filesize( get_attached_file( $doc->ID ) ) );
+            $upload_time = get_the_time( 'd M Y', $doc->ID );
+
+            $icon       = 'fa-regular fa-file';
+            $icon_class = 'text-secondary';
+            if ( 'PDF' === $ext ) {
+                $icon       = 'fa-regular fa-file-pdf';
+                $icon_class = 'text-danger';
+            } elseif ( in_array( $ext, array( 'XLS', 'XLSX', 'CSV' ), true ) ) {
+                $icon       = 'fa-regular fa-file-excel';
+                $icon_class = 'text-success';
+            } elseif ( in_array( $ext, array( 'DOC', 'DOCX' ), true ) ) {
+                $icon       = 'fa-regular fa-file-word';
+                $icon_class = 'text-primary';
+            }
+
+            ?>
+            <li class="list-group-item d-flex justify-content-between align-items-center px-0" 
+                data-ext="<?= esc_attr( $ext ); ?>"
+                data-title="<?= esc_attr( strtolower( $doc->post_title ) ); ?>"
+                data-date="<?= esc_attr( get_post_time( 'U', false, $doc->ID ) ); ?>">
+				<span>
+                    <i class="<?= esc_attr( $icon ); ?> me-2 <?= esc_attr( $icon_class ); ?>"></i>
+                    <strong><?= esc_html( $doc->post_title ); ?></strong>
+                    (<?= esc_html( $filename ); ?>)
+                </span>
+                <span class="text-muted small">
+                    [<?= esc_html( $size ); ?>]
+					&middot;
+                    <?= esc_html( $upload_time ); ?>
+                    <a href="<?= esc_url( site_url( '/download/?file=' . $doc->ID . '&mode=view' ) ); ?>" class="btn btn-sm btn-outline-secondary ms-2" target="_blank" rel="noopener noreferrer">View</a>
+                    <a href="<?= esc_url( site_url( '/download/?file=' . $doc->ID . '&mode=download' ) ); ?>" class="btn btn-sm btn-outline-primary ms-2" target="_blank" rel="noopener noreferrer">Download</a>
+                </span>
+            </li>
+            <?php
+        }
+    } else {
+        echo '<p class="mt-4 text-muted">No approved files found.</p>';
+    }
+}

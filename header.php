@@ -124,7 +124,10 @@ defined( 'ABSPATH' ) || exit;
 				echo '<div class="d-flex w-100 justify-content-between align-items-center gap-2 px-3 py-2">';
 				echo '<h1 class="h3 fs-500 mb-0">Client Portal</h1>';
 				$logout_url = wp_logout_url( home_url( '/portal-login/' ) );
+				echo '<div class="d-flex align-items-center gap-2">';
+				// echo '<a href="https://arcusinvest.com/" class="button">Arcus Website</a>';
 				echo '<a href="' . esc_url( $logout_url ) . '" class="button">Log out</a>';
+				echo '</div>';
 				echo '</div>';
 				?>
 				<?php

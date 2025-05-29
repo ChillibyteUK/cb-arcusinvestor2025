@@ -54,7 +54,9 @@ h1,
 h2,
 .h2,
 h3,
-.h3 {
+.h3,
+h4,
+.h4 {
     font-family: var(--ff-heading);
     font-weight: var(--fw-800);
     line-height: 1.1;
@@ -94,6 +96,9 @@ strong,
 .fs-500,
 .has-medium-font-size {
     font-size: var(--fs-500);
+}
+.fs-550 {
+    font-size: var(--fs-550);
 }
 .fs-300,
 .has-small-font-size {
