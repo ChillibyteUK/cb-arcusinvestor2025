@@ -274,6 +274,18 @@ function cb_restrict_docroles_admin_menu() {
 }
 add_action( 'admin_menu', 'cb_restrict_docroles_admin_menu', 999 );
 
+function cb_update_docadmin_capabilities() {
+    $role = get_role( 'docadmin' );
+
+    if ( $role ) {
+        $role->add_cap( 'create_users' );
+        $role->add_cap( 'edit_users' );
+        $role->add_cap( 'delete_users' );
+        $role->add_cap( 'list_users' );
+    }
+}
+add_action( 'init', 'cb_update_docadmin_capabilities' );
+
 /**
  * Redirect doceditor users to the Document Management dashboard by default.
  */
