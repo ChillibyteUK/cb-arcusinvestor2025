@@ -167,7 +167,7 @@ $parent_folders = $wpdb->get_results(
 						<hr class="mt-4">
 						<?php
 					} else {
-						echo '<p class="mt-4 text-muted">No files in this sub-folder.</p>';
+						// echo '<p class="mt-4 text-muted">No files in this sub-folder.</p>';
 						echo '<p class="no-results text-muted" style="display: none;">No matching documents.</p>';
 					}
                 }

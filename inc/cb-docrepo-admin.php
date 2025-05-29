@@ -222,6 +222,10 @@ function cb_add_custom_roles() {
                 'upload_files'      => true,
                 'publish_posts'     => true,
                 'edit_others_posts' => true,
+				'create_users'      => true,
+				'edit_users'        => true,
+				'delete_users'      => true,
+				'list_users'        => true,
             )
         )
     );
