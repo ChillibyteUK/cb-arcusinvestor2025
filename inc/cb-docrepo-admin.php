@@ -262,6 +262,7 @@ function cb_restrict_docroles_admin_menu() {
         remove_menu_page( 'wpcf7' ); // Contact Form 7.
         remove_menu_page( 'index.php' ); // Dashboard.
         remove_menu_page( 'tools.php' ); // Tools.
+		remove_menu_page( 'admin.php?page=_stack_cache_admin' );
     }
 
 	if ( in_array( 'docadmin', (array) $current_user->roles, true ) ) {
@@ -270,6 +271,7 @@ function cb_restrict_docroles_admin_menu() {
         remove_menu_page( 'wpcf7' ); // Contact Form 7.
         remove_menu_page( 'index.php' ); // Dashboard.
 		remove_menu_page( 'tools.php' ); // Tools.
+		remove_menu_page( 'admin.php?page=_stack_cache_admin' );
     }
 }
 add_action( 'admin_menu', 'cb_restrict_docroles_admin_menu', 999 );
