@@ -227,21 +227,68 @@ function cb_add_custom_roles() {
     );
 
     // Add doceditor role.
+	remove_role( 'doceditor' );
     add_role(
         'doceditor',
         'Document Editor',
         array_merge(
-            get_role( 'author' )->capabilities,
+            get_role( 'editor' )->capabilities,
             array(
                 'upload_files'      => true,
                 'edit_posts'        => true,
-                'edit_others_posts' => false,
-                'publish_posts'     => false, // Prevent publishing directly.
+                'edit_others_posts' => true,
+                'publish_posts'     => false,
             )
         )
     );
 }
 add_action( 'init', 'cb_add_custom_roles' );
+
+
+/**
+ * Restrict admin menu items and set default dashboard for doceditor role.
+ */
+function cb_restrict_docroles_admin_menu() {
+    // Get the current user.
+    $current_user = wp_get_current_user();
+
+    if ( in_array( 'doceditor', (array) $current_user->roles, true ) ) {
+        // Remove specific menu items.
+        remove_menu_page( 'edit.php?post_type=page' ); // Pages.
+        remove_menu_page( 'wpcf7' ); // Contact Form 7.
+        remove_menu_page( 'index.php' ); // Dashboard.
+        remove_menu_page( 'tools.php' ); // Tools.
+    }
+
+	if ( in_array( 'docadmin', (array) $current_user->roles, true ) ) {
+        // Remove specific menu items.
+        remove_menu_page( 'edit.php?post_type=page' ); // Pages.
+        remove_menu_page( 'wpcf7' ); // Contact Form 7.
+        remove_menu_page( 'index.php' ); // Dashboard.
+		remove_menu_page( 'tools.php' ); // Tools.
+    }
+}
+add_action( 'admin_menu', 'cb_restrict_docroles_admin_menu', 999 );
+
+/**
+ * Redirect doceditor users to the Document Management dashboard by default.
+ */
+function cb_redirect_docroles_dashboard() {
+    // Get the current user.
+    $current_user = wp_get_current_user();
+
+    // Check if the user has the 'doceditor' role and is on the default dashboard.
+    if ( in_array( 'doceditor', (array) $current_user->roles, true ) && is_admin() && 'index.php' === $GLOBALS['pagenow'] ) {
+        wp_safe_redirect( admin_url( 'upload.php' ) );
+        exit;
+    }
+    // Check if the user has the 'docadmin' role and is on the default dashboard.
+    if ( in_array( 'docadmin', (array) $current_user->roles, true ) && is_admin() && 'index.php' === $GLOBALS['pagenow'] ) {
+        wp_safe_redirect( admin_url( 'admin.php?page=cb-document-management' ) );
+        exit;
+    }
+}
+add_action( 'admin_init', 'cb_redirect_docroles_dashboard' );
 
 // ======== Document Management Dashboard ======== //
 
@@ -265,7 +312,7 @@ function cb_register_document_management_page() {
     add_menu_page(
         'Document Management',
         'Document Management',
-        'edit_others_posts',
+        'publish_posts',
         'cb-document-management',
         'cb_render_document_management_page',
         'dashicons-clipboard',
@@ -280,15 +327,15 @@ add_action( 'admin_menu', 'cb_register_document_management_page' );
 function cb_render_document_management_page() {
     ?>
     <div class="wrap">
-        <h1>Document Management</h1>
+        <h1 class="mb-4">Document Management</h1>
         <ul class="nav nav-tabs">
-            <li class="nav-item">
+            <li class="nav-item mb-0">
                 <a class="nav-link active" href="#pending-approvals" data-bs-toggle="tab">Pending Approvals</a>
             </li>
-            <li class="nav-item">
+            <li class="nav-item mb-0">
                 <a class="nav-link" href="#logs" data-bs-toggle="tab">Logs</a>
             </li>
-            <li class="nav-item">
+            <li class="nav-item mb-0">
                 <a class="nav-link" href="#summary" data-bs-toggle="tab">Summary</a>
             </li>
         </ul>
@@ -339,7 +386,7 @@ function cb_render_pending_approvals() {
 
     ?>
     <div class="pending-approvals pt-4">
-        <h2>Pending Approvals</h2>
+        <h3>Pending Approvals</h3>
         <?php
 		if ( empty( $pending_docs ) ) {
 			?>
@@ -408,7 +455,7 @@ function cb_render_logs() {
 
     ?>
     <div class="logs pt-4">
-        <h2>Logs</h2>
+        <h3>Logs</h3>
 
 		<form method="post">
             <div class="row mb-4">
@@ -444,7 +491,7 @@ function cb_render_logs() {
 	        <?php
 		} else {
 			?>
-			<h3>Recent Activity</h3>
+			<h4>Recent Activity</h4>
             <table class="table table-striped table-hover table-sm small">
                 <thead class="table-dark">
                     <tr>

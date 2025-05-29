@@ -67,7 +67,7 @@ if ( function_exists( 'acf_add_options_page' ) ) {
             'page_title' => 'Site-Wide Settings',
             'menu_title' => 'Site-Wide Settings',
             'menu_slug'  => 'theme-general-settings',
-            'capability' => 'edit_posts',
+            'capability' => 'manage_options',
         )
     );
 }

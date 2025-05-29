@@ -462,8 +462,10 @@ add_action(
  */
 function cb_export_csv( $rows, $filename ) {
 	if ( empty( $rows ) ) {
-		wp_die( 'No data to export.' );
-	}
+        $redirect_url = add_query_arg( 'cb_export_error', urlencode( 'No data to export.' ), wp_get_referer() );
+        wp_safe_redirect( $redirect_url );
+        exit;
+    }
 
 	header( 'Content-Type: text/csv' );
 	header( 'Content-Disposition: attachment; filename="' . $filename . '"' );
@@ -476,3 +478,14 @@ function cb_export_csv( $rows, $filename ) {
 	fclose( $output );
 	exit;
 }
+
+
+add_action(
+	'admin_notices',
+	function () {
+		if ( isset( $_GET['cb_export_error'] ) ) {
+			$message = sanitize_text_field( urldecode( $_GET['cb_export_error'] ) );
+			echo '<div class="notice notice-error"><p>' . esc_html( $message ) . '</p></div>';
+		}
+	}
+);
