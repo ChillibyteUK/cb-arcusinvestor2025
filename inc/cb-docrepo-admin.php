@@ -276,6 +276,9 @@ function cb_restrict_docroles_admin_menu() {
 }
 add_action( 'admin_menu', 'cb_restrict_docroles_admin_menu', 999 );
 
+/**
+ * Update capabilities for the 'docadmin' role.
+ */
 function cb_update_docadmin_capabilities() {
     $role = get_role( 'docadmin' );
 

@@ -12,11 +12,12 @@ $allowed_folders = cb_get_user_rml_folder_ids();
 
 // phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery
 // phpcs:disable WordPress.DB.DirectDatabaseQuery.NoCaching
+// phpcs:disable WordPress.DB.PreparedSQL.NotPrepared
 $parent_folders = $wpdb->get_results(
 	"SELECT id, name
 	FROM {$wpdb->prefix}realmedialibrary
-	WHERE id IN (" . implode( ',', array_map( 'intval', $allowed_folders ) ) . ")
-	AND parent = -1"
+	WHERE id IN (" . implode( ',', array_map( 'intval', $allowed_folders ) ) . ')
+	AND parent = -1'
 );
 
 ?>
@@ -167,7 +168,6 @@ $parent_folders = $wpdb->get_results(
 						<hr class="mt-4">
 						<?php
 					} else {
-						// echo '<p class="mt-4 text-muted">No files in this sub-folder.</p>';
 						echo '<p class="no-results text-muted" style="display: none;">No matching documents.</p>';
 					}
                 }
