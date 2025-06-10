@@ -65,6 +65,8 @@ $parent_folders = $wpdb->get_results(
 				// Filter + sort dropdowns.
 				?>
 				<div class="d-flex justify-content-between align-items-end mt-4 mb-2">
+					<?php
+					/*
 					<div>
 						<label for="filter-<?= esc_attr( $tab_id ); ?>" class="form-label">Filter by file type</label>
 						<select class="form-select form-select-sm file-filter" data-target="#list-<?= esc_attr( $tab_id ); ?>" id="filter-<?= esc_attr( $tab_id ); ?>">
@@ -75,6 +77,8 @@ $parent_folders = $wpdb->get_results(
 							<option value="TXT">Text</option>
 						</select>
 					</div>
+					*/
+					?>
 					<div>
 						<label for="sort-<?= esc_attr( $tab_id ); ?>" class="form-label">Sort by</label>
 						<select class="form-select form-select-sm file-sort" data-target="#list-<?= esc_attr( $tab_id ); ?>" id="sort-<?= esc_attr( $tab_id ); ?>">
@@ -138,6 +142,8 @@ $parent_folders = $wpdb->get_results(
 						</h4>
 						<div class="collapse show" id="sf_<?= esc_attr( $sub_folder->id ); ?>">
 							<div class="d-flex justify-content-between align-items-end mb-3">
+								<?php
+								/*
 								<div>
 									<label for="filter-subfolder-<?= esc_attr( $sub_folder->id ); ?>" class="form-label">Filter by file type</label>
 									<select class="form-select form-select-sm file-filter" data-target="#list-subfolder-<?= esc_attr( $sub_folder->id ); ?>" id="filter-subfolder-<?= esc_attr( $sub_folder->id ); ?>">
@@ -148,6 +154,8 @@ $parent_folders = $wpdb->get_results(
 										<option value="TXT">Text</option>
 									</select>
 								</div>
+								*/
+								?>
 								<div>
 									<label for="sort-subfolder-<?= esc_attr( $sub_folder->id ); ?>" class="form-label">Sort by</label>
 									<select class="form-select form-select-sm file-sort" data-target="#list-subfolder-<?= esc_attr( $sub_folder->id ); ?>" id="sort-subfolder-<?= esc_attr( $sub_folder->id ); ?>">
