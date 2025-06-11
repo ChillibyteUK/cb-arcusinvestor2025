@@ -502,8 +502,7 @@ add_action(
  */
 function cb_render_files_list( $attachment_ids, $heading = '' ) {
 
-	error_log('Subfolder ' . $sub_folder->id . ' attachments: ' . print_r($sub_folder_attachments, true));
-	
+error_log('cb_render_files_list() called with attachment_ids: ' . print_r($attachment_ids, true));	
     $attachments = get_posts(
         array(
             'post_type'      => 'attachment',

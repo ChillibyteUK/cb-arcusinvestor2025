@@ -135,12 +135,12 @@ $parent_folders = $wpdb->get_results(
 					// Render files in the sub-folder.
 					if ( ! empty( $sub_folder_attachments ) ) {
 						?>
-						<h4 class="mt-5 fs-550 d-flex align-items-center" role="button" data-bs-toggle="collapse" href="#sf_<?= esc_attr( $sub_folder->id ); ?>">
+						<h4 class="mt-5 fs-550 d-flex align-items-center collapsed" role="button" data-bs-toggle="collapse" href="#sf_<?= esc_attr( $sub_folder->id ); ?>">
 							<i class="far fa-folder me-2"></i>
 							<?= esc_html( $sub_folder->name ); ?>
 							<span class="ms-auto collapse-icon has-red-400-color" id="icon-sf_<?= esc_attr( $sub_folder->id ); ?>"><i class="fas fa-angle-up"></i></span>
 						</h4>
-						<div class="collapse show" id="sf_<?= esc_attr( $sub_folder->id ); ?>">
+						<div class="collapse" id="sf_<?= esc_attr( $sub_folder->id ); ?>">
 							<div class="d-flex justify-content-between align-items-end mb-3">
 								<?php
 								/*

@@ -29,7 +29,9 @@ function cb_set_docstatus_based_on_role( $post_id ) {
             update_post_meta( $post_id, 'docstatus', 'pending' );
         } elseif ( in_array( 'docadmin', (array) $current_user->roles, true ) ) {
             update_post_meta( $post_id, 'docstatus', 'approved' );
-        }
+        } else {
+			update_post_meta( $post_id, 'docstatus', 'pending' );
+		}
 
 		// Retrieve folder name.
         global $wpdb;
