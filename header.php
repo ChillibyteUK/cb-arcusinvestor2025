@@ -125,6 +125,9 @@ defined( 'ABSPATH' ) || exit;
 				echo '<h1 class="h3 fs-500 mb-0">Client Portal</h1>';
 				$logout_url = wp_logout_url( home_url( '/portal-login/' ) );
 				echo '<div class="d-flex align-items-center gap-2">';
+				if ( current_user_can( 'docadmin' ) || current_user_can( 'doceditor' ) ) {
+					echo '<a href="' . esc_url( admin_url() ) . '" class="button">Dashboard</a>';
+				}
 				// echo '<a href="https://arcusinvest.com/" class="button">Arcus Website</a>';
 				echo '<a href="' . esc_url( $logout_url ) . '" class="button">Log out</a>';
 				echo '</div>';
