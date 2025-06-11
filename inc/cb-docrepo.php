@@ -501,6 +501,9 @@ add_action(
  * @param string $heading        Optional heading for the file list.
  */
 function cb_render_files_list( $attachment_ids, $heading = '' ) {
+
+	error_log('Subfolder ' . $sub_folder->id . ' attachments: ' . print_r($sub_folder_attachments, true));
+	
     $attachments = get_posts(
         array(
             'post_type'      => 'attachment',
