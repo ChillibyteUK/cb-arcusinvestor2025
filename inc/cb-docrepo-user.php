@@ -299,6 +299,11 @@ add_filter(
 		$columns['domicile']         = __( 'Domicile', 'cb-arcusinvestor2025' );
 		$columns['regulator_id']     = __( 'Regulator ID', 'cb-arcusinvestor2025' );
 		$columns['access_requested'] = __( 'Access Requested', 'cb-arcusinvestor2025' );
+
+		if ( isset( $columns['posts'] ) ) {
+            unset( $columns['posts'] );
+        }
+		
 		return $columns;
 	}
 );
