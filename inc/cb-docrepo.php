@@ -5,6 +5,7 @@
  * This file contains the implementation for managing the document repository,
  * including download proxy, logging, and admin interface.
  *
+ * @file inc/cb-docrepo.php
  * @package cb-arcusinvestor2025
  */
 
@@ -462,7 +463,7 @@ add_action(
  */
 function cb_export_csv( $rows, $filename ) {
 	if ( empty( $rows ) ) {
-        $redirect_url = add_query_arg( 'cb_export_error', urlencode( 'No data to export.' ), wp_get_referer() );
+        $redirect_url = add_query_arg( 'cb_export_error', rawurlencode( 'No data to export.' ), wp_get_referer() );
         wp_safe_redirect( $redirect_url );
         exit;
     }
@@ -483,8 +484,10 @@ function cb_export_csv( $rows, $filename ) {
 add_action(
 	'admin_notices',
 	function () {
+		$message = '';
 		if ( isset( $_GET['cb_export_error'] ) ) {
-			$message = sanitize_text_field( urldecode( $_GET['cb_export_error'] ) );
+			$raw_error = filter_input( INPUT_GET, 'cb_export_error', FILTER_SANITIZE_FULL_SPECIAL_CHARS );
+			$message   = sanitize_text_field( $raw_error );
 			echo '<div class="notice notice-error"><p>' . esc_html( $message ) . '</p></div>';
 		}
 	}
@@ -502,7 +505,7 @@ add_action(
  */
 function cb_render_files_list( $attachment_ids, $heading = '' ) {
 
-error_log('cb_render_files_list() called with attachment_ids: ' . print_r($attachment_ids, true));	
+	error_log( 'cb_render_files_list() called with attachment_ids: ' . print_r( $attachment_ids, true ) ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions
     $attachments = get_posts(
         array(
             'post_type'      => 'attachment',

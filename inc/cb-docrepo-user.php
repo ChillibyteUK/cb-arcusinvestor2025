@@ -198,53 +198,165 @@ add_action( 'admin_head-user-edit.php', 'cb_hide_toolbar_ui' );
 add_action( 'admin_head-profile.php', 'cb_hide_toolbar_ui' );
 
 /**
- * Add contact phone to user profile.
+ * Additional user profile fields.
  *
  * @param array $methods An array of contact methods.
  * @return array Modified array of contact methods.
  */
-function cb_add_contact_phone_field( $methods ) {
-	$methods['contact_phone'] = __( 'Contact Phone', 'cb-arcusinvestor2025' );
+function cb_additional_user_fields( $methods ) {
+	$methods['company_name']     = __( 'Company Name', 'cb-arcusinvestor2025' );
+	$methods['domicile']         = __( 'Domicile', 'cb-arcusinvestor2025' );
+	$methods['regulator_id']     = __( 'Regulator ID', 'cb-arcusinvestor2025' );
+	$methods['access_requested'] = __( 'Access Requested', 'cb-arcusinvestor2025' );
 	return $methods;
 }
-add_filter( 'user_contactmethods', 'cb_add_contact_phone_field' );
+add_filter( 'user_contactmethods', 'cb_additional_user_fields' );
 
 
 /**
- * Output the contact phone field on the "Add New User" screen.
+ * Output the additional fields on the "Add New User" screen.
  */
-function cb_contact_phone_user_new_form() {
+function cb_additional_fields_user_new_form() {
 	?>
 	<script>
 		document.addEventListener('DOMContentLoaded', function () {
 			const websiteRow = document.getElementById('url').closest('tr');
 			if (websiteRow) {
-				const phoneRow = document.createElement('tr');
-				phoneRow.innerHTML = `
-				<th><label for="contact_phone">Contact Phone</label></th>
+
+				const accessRow = document.createElement('tr');
+				accessRow.innerHTML = `
+				<th><label for="access_requested">Access Requested</label></th>
 				<td>
-				<input type="text" name="contact_phone" id="contact_phone" value="" class="regular-text" />
+				<textarea rows="3" name="access_requested" id="access_requested" value="" class="regular-text" /></textarea>
 				</td>
 				`;
-				websiteRow.parentNode.insertBefore(phoneRow, websiteRow.nextSibling);
+				websiteRow.parentNode.insertBefore(accessRow, websiteRow.nextSibling);
+
+				const regulatorRow = document.createElement('tr');
+				regulatorRow.innerHTML = `
+				<th><label for="regulator_id">Regulator ID</label></th>
+				<td>
+				<input type="text" name="regulator_id" id="regulator_id" value="" class="regular-text" />
+				</td>
+				`;
+				websiteRow.parentNode.insertBefore(regulatorRow, websiteRow.nextSibling);
+
+				const domicileRow = document.createElement('tr');
+				domicileRow.innerHTML = `
+				<th><label for="domicile">Domicile</label></th>
+				<td>
+				<input type="text" name="domicile" id="domicile" value="" class="regular-text" />
+				</td>
+				`;
+				websiteRow.parentNode.insertBefore(domicileRow, websiteRow.nextSibling);
+
+				const companyRow = document.createElement('tr');
+				companyRow.innerHTML = `
+				<th><label for="company_name">Company Name</label></th>
+				<td>
+				<input type="text" name="company_name" id="company_name" value="" class="regular-text" />
+				</td>
+				`;
+				websiteRow.parentNode.insertBefore(companyRow, websiteRow.nextSibling);
+
 			}
 		});
 		</script>
 	<?php
 }
-add_action( 'user_new_form', 'cb_contact_phone_user_new_form' );
+add_action( 'user_new_form', 'cb_additional_fields_user_new_form' );
 
 /**
- * Save the contact phone number for a user during registration.
+ * Save the additional user fields during user registration.
  *
  * @param int $user_id The ID of the user being registered.
  */
-function cb_save_contact_phone_on_user_register( $user_id ) {
-	if ( isset( $_POST['contact_phone'] ) ) {
-		update_user_meta( $user_id, 'contact_phone', sanitize_text_field( wp_unslash( $_POST['contact_phone'] ) ) );
-	}
+function cb_save_additional_fields_on_user_register( $user_id ) {
+    $fields = array(
+        'company_name',
+        'domicile',
+        'regulator_id',
+        'access_requested',
+    );
+
+    foreach ( $fields as $field ) {
+        if ( isset( $_POST[ $field ] ) ) {
+            update_user_meta( $user_id, $field, sanitize_text_field( wp_unslash( $_POST[ $field ] ) ) );
+        } else {
+            // Set default value '-' if not provided.
+            update_user_meta( $user_id, $field, '-' );
+        }
+    }
 }
-add_action( 'user_register', 'cb_save_contact_phone_on_user_register' );
+add_action( 'user_register', 'cb_save_additional_fields_on_user_register' );
+
+
+// Add the custom fields to the user management page.
+add_filter(
+	'manage_users_columns',
+	function ( $columns ) {
+		$columns['company_name']     = __( 'Company Name', 'cb-arcusinvestor2025' );
+		$columns['domicile']         = __( 'Domicile', 'cb-arcusinvestor2025' );
+		$columns['regulator_id']     = __( 'Regulator ID', 'cb-arcusinvestor2025' );
+		$columns['access_requested'] = __( 'Access Requested', 'cb-arcusinvestor2025' );
+		return $columns;
+	}
+);
+
+// Populate custom columns.
+add_filter(
+	'manage_users_custom_column',
+	function ( $value, $column_name, $user_id ) {
+        if ( in_array( $column_name, array( 'company_name', 'domicile', 'regulator_id', 'access_requested' ), true ) ) {
+            $meta = get_user_meta( $user_id, $column_name, true );
+			return '' !== $meta ? esc_html( $meta ) : '&ndash;';
+        }
+		return $value;
+	},
+	10,
+	3
+);
+
+// Make columns sortable.
+add_filter(
+	'manage_users_sortable_columns',
+	function ( $columns ) {
+		$columns['company_name']     = 'company_name';
+		$columns['domicile']         = 'domicile';
+		$columns['regulator_id']     = 'regulator_id';
+		$columns['access_requested'] = 'access_requested';
+		return $columns;
+	}
+);
+
+// Handle sorting for custom columns.
+add_action(
+	'pre_get_users',
+	function ( $query ) {
+		if ( ! is_admin() ) {
+			return;
+		}
+        $orderby        = $query->get( 'orderby' );
+        $custom_columns = array( 'company_name', 'domicile', 'regulator_id', 'access_requested' );
+        if ( in_array( $orderby, $custom_columns, true ) ) {
+            $query->set( 'meta_key', $orderby );
+            $query->set( 'orderby', 'meta_value' );
+            // This ensures users with no value are included.
+            $meta_query = array(
+                'relation' => 'OR',
+                array(
+                    'key'     => $orderby,
+                    'compare' => 'EXISTS',
+                ),
+                array(
+                    'key'     => $orderby,
+                    'compare' => 'NOT EXISTS',
+                ),
+            );
+            $query->set( 'meta_query', $meta_query );
+        }
+	}
+);
 
 
 /**
@@ -358,7 +470,7 @@ add_filter(
     'acf/load_field/name=rml_folder_access',
     function ( $field ) {
         if ( ! function_exists( 'wp_rml_objects' ) ) {
-            error_log( 'RML: wp_rml_objects() not available' );
+            error_log( 'RML: wp_rml_objects() not available' ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
             return $field;
         }
 
@@ -366,7 +478,7 @@ add_filter(
 
         $folders = wp_rml_objects();
         if ( empty( $folders ) ) {
-            error_log( 'RML: No folders returned' );
+            error_log( 'RML: No folders returned' ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
             return $field;
         }
 
@@ -391,10 +503,10 @@ function cb_build_folder_hierarchy_with_parents( $folders ) {
     $folder_parents    = array(); // Map folder ID to its parent ID.
     foreach ( $folders as $folder ) {
         if ( method_exists( $folder, 'getParent' ) && method_exists( $folder, 'getId' ) ) {
-            $parent_id = $folder->getParent();
-            $folder_id = $folder->getId();
+            $parent_id                         = $folder->getParent();
+            $folder_id                         = $folder->getId();
             $folders_by_parent[ $parent_id ][] = $folder;
-            $folder_parents[ $folder_id ] = $parent_id;
+            $folder_parents[ $folder_id ]      = $parent_id;
         }
     }
 
@@ -441,7 +553,7 @@ function cb_include_parent_folders( $hierarchy, $folder_parents ) {
         $current_folder = $folder_id;
 
         // Traverse up the parent chain and include all parent folders.
-        while ( isset( $folder_parents[ $current_folder ] ) && $folder_parents[ $current_folder ] !== -1 ) {
+        while ( isset( $folder_parents[ $current_folder ] ) && -1 !== $folder_parents[ $current_folder ] ) {
             $parent_id = $folder_parents[ $current_folder ];
 
             // If the parent is not already in the hierarchy, add it.
@@ -458,22 +570,24 @@ function cb_include_parent_folders( $hierarchy, $folder_parents ) {
 
 add_filter(
     'acf/update_value/name=rml_folder_access',
-    function ( $value, $post_id, $field ) {
+    function ( $value, $post_id, $field ) { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.FoundAfterLastUsed
         if ( ! function_exists( 'wp_rml_objects' ) ) {
             return $value;
         }
 
         // Get all folders and their parent relationships.
-        $folders = wp_rml_objects();
+        $folders        = wp_rml_objects();
         $folder_parents = array();
 
-        foreach ( $folders as $folder ) {
-            if ( method_exists( $folder, 'getParent' ) && method_exists( $folder, 'getId' ) ) {
-                $folder_id = $folder->getId();
-                $parent_id = $folder->getParent();
-                $folder_parents[ $folder_id ] = $parent_id;
-            }
-        }
+		if ( is_iterable( $folders ) ) {
+			foreach ( $folders as $folder ) {
+				if ( method_exists( $folder, 'getParent' ) && method_exists( $folder, 'getId' ) ) {
+					$folder_id                    = $folder->getId();
+					$parent_id                    = $folder->getParent();
+					$folder_parents[ $folder_id ] = $parent_id;
+				}
+			}
+		}
 
         // Ensure parent folders are included in the saved value.
         $updated_value = (array) $value; // Ensure it's an array.
@@ -481,7 +595,7 @@ add_filter(
             $current_folder = $folder_id;
 
             // Traverse up the parent chain and include all parent folders.
-            while ( isset( $folder_parents[ $current_folder ] ) && $folder_parents[ $current_folder ] !== -1 ) {
+            while ( isset( $folder_parents[ $current_folder ] ) && -1 !== $folder_parents[ $current_folder ] ) {
                 $parent_id = $folder_parents[ $current_folder ];
                 if ( ! in_array( $parent_id, $updated_value, true ) ) {
                     $updated_value[] = $parent_id;
@@ -773,3 +887,42 @@ add_action(
 		}
 	}
 );
+
+/**
+ * Notification for user registration.
+ *
+ * This function customizes the email sent to new users upon registration.
+ * It includes a password reset link and instructions for setting their password.
+ *
+ * @param array   $wp_new_user_notification_email The email parameters.
+ * @param WP_User $user The user object for the newly registered user.
+ * @param string  $blogname The name of the site.
+ * @return array  Modified email parameters.
+ */
+function cb_custom_new_user_email( $wp_new_user_notification_email, $user, $blogname ) { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.FoundAfterLastUsed
+	$key = get_password_reset_key( $user );
+
+	$reset_url = add_query_arg(
+		array(
+			'key'   => $key,
+			'login' => rawurlencode( $user->user_login ),
+		),
+		home_url( '/reset-password/' )
+	);
+
+	$wp_new_user_notification_email['subject'] = 'Welcome to the Arcus Client Portal';
+
+	$wp_new_user_notification_email['headers'] = array( 'Content-Type: text/plain; charset=UTF-8' );
+
+	$wp_new_user_notification_email['message']  = "Username: {$user->user_login},\n\n";
+	$wp_new_user_notification_email['message'] .= "An account has been created for you on the Arcus client portal.\n\n";
+	$wp_new_user_notification_email['message'] .= "To set your password, visit the following address:\n\n";
+	$wp_new_user_notification_email['message'] .= $reset_url . "\n\n";
+	$wp_new_user_notification_email['message'] .= "To log in to the Arcus client portal, visit the following address:\n\n";
+	$wp_new_user_notification_email['message'] .= home_url() . "\n\n";
+	$wp_new_user_notification_email['message'] .= 'If you were not expecting this, you can safely ignore this email.';
+
+	return $wp_new_user_notification_email;
+}
+
+add_filter( 'wp_new_user_notification_email', 'cb_custom_new_user_email', 10, 3 );
