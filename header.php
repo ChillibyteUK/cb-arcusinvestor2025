@@ -117,7 +117,7 @@ defined( 'ABSPATH' ) || exit;
 	}
 	?>
     <div class="header bg-white d-flex justify-content-start align-items-center gap-2 px-3 py-2">
-		<div class="container d-flex">
+		<div class="container d-flex justify-content-between align-items-center gap-2">
 			<div class="logo-container"><a href="/" class="logo" aria-label=""></a></div>
 			<?php
 			if ( is_user_logged_in() ) {
@@ -128,7 +128,6 @@ defined( 'ABSPATH' ) || exit;
 				if ( current_user_can( 'docadmin' ) || current_user_can( 'doceditor' ) ) {
 					echo '<a href="' . esc_url( admin_url() ) . '" class="button">Dashboard</a>';
 				}
-				// echo '<a href="https://arcusinvest.com/" class="button">Arcus Website</a>';
 				echo '<a href="' . esc_url( $logout_url ) . '" class="button">Log out</a>';
 				echo '</div>';
 				echo '</div>';
@@ -136,5 +135,6 @@ defined( 'ABSPATH' ) || exit;
 				<?php
 			}
 			?>
+			<a href="https://arcusinvest.com/" class="fs-300 text-decoration-none text-nowrap">arcusinvest.com <i class="fa-solid fa-arrow-up-right-from-square"></i></a>
 		</div>
 	</div>
