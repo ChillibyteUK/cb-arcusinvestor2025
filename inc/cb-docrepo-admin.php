@@ -251,6 +251,22 @@ function cb_add_custom_roles() {
 add_action( 'init', 'cb_add_custom_roles' );
 
 
+/*
+ * Hide the unused roles from the user interface.
+ */
+add_filter(
+	'editable_roles',
+	function ( $roles ) {
+		$allowed = array( 'administrator', 'docadmin', 'doceditor', 'portal_user' );
+		foreach ( array_keys( $roles ) as $role ) {
+			if ( ! in_array( $role, $allowed, true ) ) {
+				unset( $roles[ $role ] );
+			}
+		}
+		return $roles;
+	}
+);
+
 /**
  * Restrict admin menu items and set default dashboard for doceditor role.
  */

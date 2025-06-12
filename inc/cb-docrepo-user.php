@@ -303,7 +303,7 @@ add_filter(
 		if ( isset( $columns['posts'] ) ) {
             unset( $columns['posts'] );
         }
-		
+
 		return $columns;
 	}
 );
@@ -400,20 +400,15 @@ add_action(
 <script>
 	document.addEventListener('DOMContentLoaded', function () {
 		const roleSelect = document.getElementById('role');
-		if (!roleSelect) {
-			console.log('Role select not found.');
-			return;
-		}
+		if (!roleSelect) return;
 
-		if (roleSelect.value === 'subscriber') {
-			console.log('Overriding default role to "portal_user"');
+		if (roleSelect.selectedIndex === 0 || !roleSelect.value || roleSelect.value === 'doceditor' || roleSelect.value === 'docadmin' || roleSelect.value === 'administrator') {
 			const portalOption = roleSelect.querySelector('option[value="portal_user"]');
 			if (portalOption) {
 				portalOption.selected = true;
 			}
-		} else {
-			console.log('Role already changed or set explicitly:', roleSelect.value);
 		}
+
 	});
 </script>
 		<?php
