@@ -3,6 +3,53 @@
     "title": "Compliance",
     "fields": [
         {
+            "key": "field_684bfa163360f",
+            "label": "Is company compliance okay in CRM",
+            "name": "company_compliance",
+            "aria-label": "",
+            "type": "radio",
+            "instructions": "",
+            "required": 1,
+            "conditional_logic": 0,
+            "wrapper": {
+                "width": "",
+                "class": "",
+                "id": ""
+            },
+            "choices": {
+                "Yes": "Yes",
+                "No": "No"
+            },
+            "default_value": "",
+            "return_format": "value",
+            "allow_null": 0,
+            "other_choice": 0,
+            "allow_in_bindings": 0,
+            "layout": "vertical",
+            "save_other_choice": 0
+        },
+        {
+            "key": "field_68236272f1406",
+            "label": "Compliance comment regarding information permissioned",
+            "name": "account_status_note",
+            "aria-label": "",
+            "type": "textarea",
+            "instructions": "",
+            "required": 1,
+            "conditional_logic": 0,
+            "wrapper": {
+                "width": "",
+                "class": "",
+                "id": ""
+            },
+            "default_value": "",
+            "maxlength": "",
+            "allow_in_bindings": 0,
+            "rows": 3,
+            "placeholder": "",
+            "new_lines": ""
+        },
+        {
             "key": "field_68236253f1405",
             "label": "Account Expiry Date",
             "name": "account_expiry_date",
@@ -20,27 +67,6 @@
             "return_format": "Y-m-d",
             "first_day": 1,
             "allow_in_bindings": 0
-        },
-        {
-            "key": "field_68236272f1406",
-            "label": "Account Status Note",
-            "name": "account_status_note",
-            "aria-label": "",
-            "type": "textarea",
-            "instructions": "",
-            "required": 0,
-            "conditional_logic": 0,
-            "wrapper": {
-                "width": "",
-                "class": "",
-                "id": ""
-            },
-            "default_value": "",
-            "maxlength": "",
-            "allow_in_bindings": 0,
-            "rows": 3,
-            "placeholder": "",
-            "new_lines": ""
         },
         {
             "key": "field_rml_folder_access",
@@ -118,5 +144,5 @@
     "active": true,
     "description": "",
     "show_in_rest": 0,
-    "modified": 1749809590
+    "modified": 1749814195
 }
