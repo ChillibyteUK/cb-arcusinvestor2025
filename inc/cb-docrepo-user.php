@@ -206,7 +206,7 @@ add_action( 'admin_head-profile.php', 'cb_hide_toolbar_ui' );
 function cb_additional_user_fields( $methods ) {
 	$methods['company_name']     = __( 'Company Name', 'cb-arcusinvestor2025' );
 	$methods['domicile']         = __( 'Domicile', 'cb-arcusinvestor2025' );
-	$methods['regulator_id']     = __( 'Regulator ID', 'cb-arcusinvestor2025' );
+	$methods['regulator_id']     = __( 'Regulator & Regulator ID', 'cb-arcusinvestor2025' );
 	$methods['access_requested'] = __( 'Access Requested', 'cb-arcusinvestor2025' );
 	return $methods;
 }
@@ -234,7 +234,7 @@ function cb_additional_fields_user_new_form() {
 
 				const regulatorRow = document.createElement('tr');
 				regulatorRow.innerHTML = `
-				<th><label for="regulator_id">Regulator ID</label></th>
+				<th><label for="regulator_id">Regulator &amp; Regulator ID</label></th>
 				<td>
 				<input type="text" name="regulator_id" id="regulator_id" value="" class="regular-text" />
 				</td>
@@ -259,12 +259,94 @@ function cb_additional_fields_user_new_form() {
 				`;
 				websiteRow.parentNode.insertBefore(companyRow, websiteRow.nextSibling);
 
-			}
+			} 
+
 		});
 		</script>
 	<?php
 }
 add_action( 'user_new_form', 'cb_additional_fields_user_new_form' );
+
+add_action( 'admin_footer-user-new.php', function () {
+?>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    function findFolderAccessRow() {
+        // Find the last tr containing the rml_folder_access field
+        const folderField = document.querySelector('[name="acf[rml_folder_access][]"]');
+        if (folderField) {
+            return folderField.closest('tr');
+        }
+        // fallback: try by label
+        const label = Array.from(document.querySelectorAll('label')).find(l => l.textContent.match(/User Folder Access/i));
+        if (label) {
+            return label.closest('tr');
+        }
+        return null;
+    }
+
+    function findPasswordRows() {
+        // Collect all password-related rows
+        const rows = [];
+        const pass1 = document.getElementById('pass1')?.closest('tr');
+        const pass2 = document.getElementById('pass2')?.closest('tr');
+        const pwWeak = document.querySelector('tr.pw-weak');
+        if (pass1) rows.push(pass1);
+        if (pass2 && pass2 !== pass1) rows.push(pass2);
+        if (pwWeak && !rows.includes(pwWeak)) rows.push(pwWeak);
+        return rows;
+    }
+
+    function findNotificationRow() {
+        // Find the tr that contains "Send User Notification" in any cell
+        const rows = document.querySelectorAll('form#createuser tr');
+        for (const row of rows) {
+            if (row.innerText && row.innerText.match(/Send User Notification/i)) {
+                return row;
+            }
+        }
+        return null;
+    }
+
+    function reorderRows() {
+        const folderRow = findFolderAccessRow();
+        const passwordRows = findPasswordRows();
+        const notifyRow = findNotificationRow();
+
+        if (folderRow) {
+            let insertAfter = folderRow;
+            // Move password rows after folderRow, in order
+            passwordRows.forEach(row => {
+                if (row && row.parentNode) {
+                    insertAfter.parentNode.insertBefore(row, insertAfter.nextSibling);
+                    insertAfter = row;
+                }
+            });
+            // Move notification row after last password row (or after folderRow if no password rows)
+            if (notifyRow && notifyRow.parentNode) {
+                insertAfter.parentNode.insertBefore(notifyRow, insertAfter.nextSibling);
+                insertAfter = notifyRow;
+            }
+        }
+    }
+
+    // Observe for dynamic field rendering
+    const form = document.getElementById('createuser');
+    if (form) {
+        let observer;
+        function safeReorderRows() {
+            observer.disconnect();
+            reorderRows();
+            observer.observe(form, { childList: true, subtree: true });
+        }
+        observer = new MutationObserver(safeReorderRows);
+        observer.observe(form, { childList: true, subtree: true });
+        reorderRows();
+    }
+});
+</script>
+<?php
+});
 
 /**
  * Save the additional user fields during user registration.
@@ -297,7 +379,7 @@ add_filter(
 	function ( $columns ) {
 		$columns['company_name']     = __( 'Company Name', 'cb-arcusinvestor2025' );
 		$columns['domicile']         = __( 'Domicile', 'cb-arcusinvestor2025' );
-		$columns['regulator_id']     = __( 'Regulator ID', 'cb-arcusinvestor2025' );
+		$columns['regulator_id']     = __( 'Regulator &amp; Regulator ID', 'cb-arcusinvestor2025' );
 		$columns['access_requested'] = __( 'Access Requested', 'cb-arcusinvestor2025' );
 
 		if ( isset( $columns['posts'] ) ) {
