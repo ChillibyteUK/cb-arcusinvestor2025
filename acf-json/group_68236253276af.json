@@ -1,34 +1,41 @@
 {
     "key": "group_68236253276af",
-    "title": "User Account Metadata",
+    "title": "Compliance",
     "fields": [
         {
-            "key": "field_68236253f1405",
-            "label": "Account Expiry Date",
-            "name": "account_expiry_date",
+            "key": "field_684bfa163360f",
+            "label": "Is company compliance okay in CRM",
+            "name": "company_compliance",
             "aria-label": "",
-            "type": "date_picker",
+            "type": "radio",
             "instructions": "",
-            "required": 0,
+            "required": 1,
             "conditional_logic": 0,
             "wrapper": {
                 "width": "",
                 "class": "",
                 "id": ""
             },
-            "display_format": "d/m/Y",
-            "return_format": "Y-m-d",
-            "first_day": 1,
-            "allow_in_bindings": 0
+            "choices": {
+                "Yes": "Yes",
+                "No": "No"
+            },
+            "default_value": "",
+            "return_format": "value",
+            "allow_null": 1,
+            "other_choice": 0,
+            "allow_in_bindings": 0,
+            "layout": "vertical",
+            "save_other_choice": 0
         },
         {
             "key": "field_68236272f1406",
-            "label": "Account Status Note",
+            "label": "Compliance comment regarding information permissioned",
             "name": "account_status_note",
             "aria-label": "",
             "type": "textarea",
             "instructions": "",
-            "required": 0,
+            "required": 1,
             "conditional_logic": 0,
             "wrapper": {
                 "width": "",
@@ -43,19 +50,66 @@
             "new_lines": ""
         },
         {
+            "key": "field_68236253f1405",
+            "label": "Account Expiry Date",
+            "name": "account_expiry_date",
+            "aria-label": "",
+            "type": "date_picker",
+            "instructions": "",
+            "required": 0,
+            "conditional_logic": 0,
+            "wrapper": {
+                "width": "",
+                "class": "",
+                "id": ""
+            },
+            "display_format": "d\/m\/Y",
+            "return_format": "Y-m-d",
+            "first_day": 1,
+            "allow_in_bindings": 0
+        },
+        {
             "key": "field_rml_folder_access",
             "label": "User Folder Access",
             "name": "rml_folder_access",
+            "aria-label": "",
             "type": "checkbox",
             "instructions": "Select which Real Media Library folders this user can access.",
             "required": 0,
             "conditional_logic": 0,
-            "choices": {},
+            "wrapper": {
+                "width": "",
+                "class": "",
+                "id": ""
+            },
+            "choices": {
+                "1": " AJF",
+                "10": "-- Newsletters",
+                "11": "-- Presentations",
+                "13": "-- Performance Spreadsheet",
+                "20": "-- Annual & Semi-Annual Reports",
+                "23": "-- Holdings",
+                "2": " AJVF",
+                "14": "-- Newsletters",
+                "15": "-- Presentations",
+                "16": "-- Performance Spreadsheet",
+                "21": "-- Annual Reports",
+                "24": "-- Holdings",
+                "3": " Zensen",
+                "17": "-- Newsletters",
+                "18": "-- Presentations",
+                "19": "-- Performance Spreadsheet",
+                "22": "-- Annual Reports",
+                "25": "-- Holdings",
+                "7": " Corporate\/Strategy"
+            },
             "allow_custom": 0,
             "default_value": [],
             "layout": "vertical",
             "return_format": "value",
-            "parent": "group_68236253276af"
+            "save_custom": 0,
+            "toggle": 0,
+            "custom_choice_button_text": "Add new choice"
         }
     ],
     "location": [
@@ -90,5 +144,5 @@
     "active": true,
     "description": "",
     "show_in_rest": 0,
-    "modified": 1747219155
+    "modified": 1749814299
 }

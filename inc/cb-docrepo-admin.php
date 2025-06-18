@@ -228,6 +228,7 @@ function cb_add_custom_roles() {
 				'edit_users'        => true,
 				'delete_users'      => true,
 				'list_users'        => true,
+				'promote_users'     => true,
             )
         )
     );
@@ -305,6 +306,7 @@ function cb_update_docadmin_capabilities() {
         $role->add_cap( 'edit_users' );
         $role->add_cap( 'delete_users' );
         $role->add_cap( 'list_users' );
+        $role->add_cap( 'promote_users' );
     }
 }
 add_action( 'init', 'cb_update_docadmin_capabilities' );
