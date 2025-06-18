@@ -888,6 +888,14 @@ add_action(
 	}
 );
 
+/* Increase link timeout from 24 hours to 7 days. */
+add_filter(
+	'password_reset_expiration',
+	function () {
+		return WEEK_IN_SECONDS; // 604800 seconds = 7 days
+	}
+);
+
 /**
  * Notification for user registration.
  *
