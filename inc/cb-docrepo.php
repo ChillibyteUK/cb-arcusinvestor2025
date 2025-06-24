@@ -32,8 +32,10 @@ add_action(
 	function () {
 		if ( get_query_var( 'cb_download_proxy' ) && is_user_logged_in() ) {
 
+			require_once get_stylesheet_directory() . '/vendor/autoload.php';
+
 			$file_id         = absint( get_query_var( 'file' ) );
-			$mode            = get_query_var( 'mode', 'download' ); // default to download.
+			$mode            = get_query_var( 'mode', 'download' );
 			$current_user    = wp_get_current_user();
 			$allowed_folders = cb_get_user_rml_folder_ids();
 
@@ -42,7 +44,8 @@ add_action(
 
 				$user_id    = get_current_user_id();
 				$file_title = get_the_title( $file_id );
-                $file_name  = basename( get_attached_file( $file_id ) );
+				$file_path  = get_attached_file( $file_id );
+                $file_name  = basename( $file_path );
 
                 // Retrieve folder name.
 				$cache_key   = 'cb_folder_name_' . $file_id;
@@ -90,18 +93,22 @@ add_action(
 					$file_path = get_attached_file( $file_id );
 
 					if ( file_exists( $file_path ) ) {
+						$mime_type = mime_content_type( $file_path );
+
+						if ( $mime_type === 'application/pdf' ) {
+							// Watermark and stream PDF.
+							cb_watermark_pdf_stream( $file_path, $current_user->display_name, $current_user->user_email, $mode );
+							exit;
+						}
+
+						// For non-PDFs: fallback to normal file stream.
 						header( 'Content-Description: File Transfer' );
-						header( 'Content-Type: ' . mime_content_type( $file_path ) );
+						header( 'Content-Type: ' . $mime_type );
+						header( 'Content-Disposition: ' . ( 'download' === $mode ? 'attachment' : 'inline' ) . '; filename="' . basename( $file_path ) . '"' );
 						header( 'Expires: 0' );
 						header( 'Cache-Control: must-revalidate' );
 						header( 'Pragma: public' );
 						header( 'Content-Length: ' . filesize( $file_path ) );
-
-						if ( 'download' === $mode ) {
-							header( 'Content-Disposition: attachment; filename="' . basename( $file_path ) . '"' );
-						} else {
-							header( 'Content-Disposition: inline; filename="' . basename( $file_path ) . '"' );
-						}
 
 						readfile( $file_path );
 						exit;
@@ -113,6 +120,63 @@ add_action(
 		}
 	}
 );
+
+function cb_watermark_pdf_stream( $file_path, $user_name, $user_email, $mode = 'download' ) {
+	require_once get_stylesheet_directory() . '/vendor/autoload.php';
+
+	$date        = date( 'Y-m-d H:i:s' );
+	$watermark   = "Downloaded by {$user_name} | {$user_email} | {$date}";
+	$temp_output = tempnam( sys_get_temp_dir(), 'pdf_' );
+
+	$pdf = new \setasign\Fpdi\Fpdi();
+	$page_count = $pdf->setSourceFile( $file_path );
+
+	for ( $i = 1; $i <= $page_count; $i++ ) {
+		$tpl_id = $pdf->importPage( $i );
+		$size   = $pdf->getTemplateSize( $tpl_id );
+
+		$orientation = ( $size['width'] > $size['height'] ) ? 'L' : 'P';
+
+		$pdf->AddPage( $orientation, [ $size['width'], $size['height'] ] );
+		$pdf->useTemplate( $tpl_id, 0, 0, $size['width'], $size['height'], true );
+
+		// Set watermark style
+		$pdf->SetFont( 'Arial', '', 6 );
+		$pdf->SetTextColor( 100, 100, 100 );
+
+		// Top position
+		$x = 5;
+		$y = 5;
+
+		// Optional background (light white for legibility, without risk of page conflict)
+		// Comment this out if it causes layout issues again.
+		// $pdf->SetFillColor(255, 255, 255);
+		// $pdf->Rect( $x, $y - 1, $size['width'] - 20, 7, 'F' );
+
+		// Output watermark
+		$pdf->SetXY( $x, $y );
+		$pdf->Cell( 0, 5, $watermark, 0, 0, 'L' );
+	}
+
+	$pdf->Output( 'F', $temp_output );
+
+	header( 'Content-Description: File Transfer' );
+	header( 'Content-Type: application/pdf' );
+	header( 'Content-Disposition: ' . ( $mode === 'download' ? 'attachment' : 'inline' ) . '; filename="' . basename( $file_path ) . '"' );
+	header( 'Expires: 0' );
+	header( 'Cache-Control: must-revalidate' );
+	header( 'Pragma: public' );
+	header( 'Content-Length: ' . filesize( $temp_output ) );
+
+	readfile( $temp_output );
+	unlink( $temp_output );
+	exit;
+}
+
+
+
+
+
 
 /**
  * Filter attachments by 'docstatus' on the front end.

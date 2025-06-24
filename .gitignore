@@ -43,7 +43,8 @@
 # Dependencies
 bower_components
 node_modules
-/vendor/
+# vendor is needed for deployment
+# /vendor/
 
 # Other Understrap specific files and directories
 phpcs.xml
