@@ -47,6 +47,8 @@ add_action(
 				$file_path  = get_attached_file( $file_id );
                 $file_name  = basename( $file_path );
 
+				$serial = wp_generate_uuid4();
+
                 // Retrieve folder name.
 				$cache_key   = 'cb_folder_name_' . $file_id;
 				$folder_name = wp_cache_get( $cache_key, 'cb_download_proxy' );
@@ -77,6 +79,7 @@ add_action(
                             'file_name'     => $file_name,
                             'folder_name'   => $folder_name,
 							'action'        => $mode,
+							'notes'         => $serial,
 						)
 					);
 				}
@@ -97,7 +100,7 @@ add_action(
 
 						if ( $mime_type === 'application/pdf' ) {
 							// Watermark and stream PDF.
-							cb_watermark_pdf_stream( $file_path, $current_user->display_name, $current_user->user_email, $mode );
+							cb_watermark_pdf_stream( $file_path, $current_user->display_name, $current_user->user_email, $mode, $serial );
 							exit;
 						}
 
@@ -121,14 +124,23 @@ add_action(
 	}
 );
 
-function cb_watermark_pdf_stream( $file_path, $user_name, $user_email, $mode = 'download' ) {
+/**
+ * Streams a PDF file with a watermark containing user information.
+ *
+ * @param string $file_path  The path to the PDF file.
+ * @param string $user_name  The display name of the user.
+ * @param string $user_email The email address of the user.
+ * @param string $mode       The mode for content disposition ('download' or 'view').
+ */
+function cb_watermark_pdf_stream( $file_path, $user_name, $user_email, $mode = 'download', $serial ) {
+
 	require_once get_stylesheet_directory() . '/vendor/autoload.php';
 
-	$date        = date( 'Y-m-d H:i:s' );
-	$watermark   = "Downloaded by {$user_name} | {$user_email} | {$date}";
+	$date        = gmdate( 'Y-m-d H:i:s' );
+	$watermark   = "Downloaded by {$user_name} | {$user_email} | {$date} | {$serial}";
 	$temp_output = tempnam( sys_get_temp_dir(), 'pdf_' );
 
-	$pdf = new \setasign\Fpdi\Fpdi();
+	$pdf        = new \setasign\Fpdi\Fpdi();
 	$page_count = $pdf->setSourceFile( $file_path );
 
 	for ( $i = 1; $i <= $page_count; $i++ ) {
@@ -140,11 +152,11 @@ function cb_watermark_pdf_stream( $file_path, $user_name, $user_email, $mode = '
 		$pdf->AddPage( $orientation, [ $size['width'], $size['height'] ] );
 		$pdf->useTemplate( $tpl_id, 0, 0, $size['width'], $size['height'], true );
 
-		// Set watermark style
+		// Set watermark style.
 		$pdf->SetFont( 'Arial', '', 6 );
 		$pdf->SetTextColor( 100, 100, 100 );
 
-		// Top position
+		// Top position.
 		$x = 5;
 		$y = 5;
 
@@ -153,7 +165,7 @@ function cb_watermark_pdf_stream( $file_path, $user_name, $user_email, $mode = '
 		// $pdf->SetFillColor(255, 255, 255);
 		// $pdf->Rect( $x, $y - 1, $size['width'] - 20, 7, 'F' );
 
-		// Output watermark
+		// Output watermark.
 		$pdf->SetXY( $x, $y );
 		$pdf->Cell( 0, 5, $watermark, 0, 0, 'L' );
 	}
@@ -172,9 +184,6 @@ function cb_watermark_pdf_stream( $file_path, $user_name, $user_email, $mode = '
 	unlink( $temp_output );
 	exit;
 }
-
-
-
 
 
 
@@ -569,7 +578,7 @@ add_action(
  */
 function cb_render_files_list( $attachment_ids, $heading = '' ) {
 
-	error_log( 'cb_render_files_list() called with attachment_ids: ' . print_r( $attachment_ids, true ) ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions
+	// error_log( 'cb_render_files_list() called with attachment_ids: ' . print_r( $attachment_ids, true ) ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions
     $attachments = get_posts(
         array(
             'post_type'      => 'attachment',
