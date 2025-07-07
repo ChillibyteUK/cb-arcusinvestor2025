@@ -100,7 +100,7 @@ add_action(
 
 						if ( $mime_type === 'application/pdf' ) {
 							// Watermark and stream PDF.
-							cb_watermark_pdf_stream( $file_path, $current_user->display_name, $current_user->user_email, $mode, $serial );
+							cb_watermark_pdf_stream( $file_path, $current_user->display_name, $current_user->user_email, $serial, $mode );
 							exit;
 						}
 
@@ -130,51 +130,59 @@ add_action(
  * @param string $file_path  The path to the PDF file.
  * @param string $user_name  The display name of the user.
  * @param string $user_email The email address of the user.
+ * @param string $serial     The unique serial for this download.
  * @param string $mode       The mode for content disposition ('download' or 'view').
  */
-function cb_watermark_pdf_stream( $file_path, $user_name, $user_email, $mode = 'download', $serial ) {
+function cb_watermark_pdf_stream( $file_path, $user_name, $user_email, $serial, $mode = 'download' ) {
 
 	require_once get_stylesheet_directory() . '/vendor/autoload.php';
 
-	$date        = gmdate( 'Y-m-d H:i:s' );
-	$watermark   = "Downloaded by {$user_name} | {$user_email} | {$date} | {$serial}";
-	$temp_output = tempnam( sys_get_temp_dir(), 'pdf_' );
+	$date              = gmdate( 'Y-m-d H:i:s' );
+	$watermark         = "Downloaded by {$user_name} | {$user_email} | {$date} | {$serial}";
+	$temp_output       = tempnam( sys_get_temp_dir(), 'pdf_' );
+	$watermark_success = false;
 
-	$pdf        = new \setasign\Fpdi\Fpdi();
-	$page_count = $pdf->setSourceFile( $file_path );
+	try {
+		$pdf        = new \setasign\Fpdi\Fpdi();
+		$page_count = $pdf->setSourceFile( $file_path );
 
-	for ( $i = 1; $i <= $page_count; $i++ ) {
-		$tpl_id = $pdf->importPage( $i );
-		$size   = $pdf->getTemplateSize( $tpl_id );
+		for ( $i = 1; $i <= $page_count; $i++ ) {
+			$tpl_id = $pdf->importPage( $i );
+			$size   = $pdf->getTemplateSize( $tpl_id );
 
-		$orientation = ( $size['width'] > $size['height'] ) ? 'L' : 'P';
+			$orientation = ( $size['width'] > $size['height'] ) ? 'L' : 'P';
 
-		$pdf->AddPage( $orientation, [ $size['width'], $size['height'] ] );
-		$pdf->useTemplate( $tpl_id, 0, 0, $size['width'], $size['height'], true );
+			$pdf->AddPage( $orientation, array( $size['width'], $size['height'] ) );
+			$pdf->useTemplate( $tpl_id, 0, 0, $size['width'], $size['height'], true );
 
-		// Set watermark style.
-		$pdf->SetFont( 'Arial', '', 6 );
-		$pdf->SetTextColor( 100, 100, 100 );
+			// Set watermark style.
+			$pdf->SetFont( 'Arial', '', 6 );
+			$pdf->SetTextColor( 100, 100, 100 );
 
-		// Top position.
-		$x = 5;
-		$y = 5;
+			// Top position.
+			$x = 5;
+			$y = 5;
 
-		// Optional background (light white for legibility, without risk of page conflict)
-		// Comment this out if it causes layout issues again.
-		// $pdf->SetFillColor(255, 255, 255);
-		// $pdf->Rect( $x, $y - 1, $size['width'] - 20, 7, 'F' );
+			// Output watermark.
+			$pdf->SetXY( $x, $y );
+			$pdf->Cell( 0, 5, $watermark, 0, 0, 'L' );
+		}
 
-		// Output watermark.
-		$pdf->SetXY( $x, $y );
-		$pdf->Cell( 0, 5, $watermark, 0, 0, 'L' );
+		$pdf->Output( 'F', $temp_output );
+		$watermark_success = true;
+
+	} catch ( \Exception $e ) {
+		// If watermarking fails, just serve the original file.
+		copy( $file_path, $temp_output );
+		$watermark_success = false;
 	}
 
-	$pdf->Output( 'F', $temp_output );
+	// Update the download log with the appropriate status.
+	cb_update_download_log_status( $serial, $watermark_success );
 
 	header( 'Content-Description: File Transfer' );
 	header( 'Content-Type: application/pdf' );
-	header( 'Content-Disposition: ' . ( $mode === 'download' ? 'attachment' : 'inline' ) . '; filename="' . basename( $file_path ) . '"' );
+	header( 'Content-Disposition: ' . ( 'download' === $mode ? 'attachment' : 'inline' ) . '; filename="' . basename( $file_path ) . '"' );
 	header( 'Expires: 0' );
 	header( 'Cache-Control: must-revalidate' );
 	header( 'Pragma: public' );
@@ -646,4 +654,26 @@ function cb_render_files_list( $attachment_ids, $heading = '' ) {
     } else {
         echo '<p class="mt-4 text-muted">No approved files found.</p>';
     }
+}
+
+/**
+ * Updates the download log entry with the appropriate status.
+ *
+ * @param string $serial           The unique serial for this download.
+ * @param bool   $watermark_success Whether watermarking was successful.
+ */
+function cb_update_download_log_status( $serial, $watermark_success ) {
+	global $wpdb;
+
+	$notes = $watermark_success ? $serial : 'not editable';
+
+	// Update the log entry with the appropriate notes.
+	// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+	$wpdb->update(
+		$wpdb->prefix . 'cb_download_log',
+		array( 'notes' => $notes ),
+		array( 'notes' => $serial ),
+		array( '%s' ),
+		array( '%s' )
+	);
 }
