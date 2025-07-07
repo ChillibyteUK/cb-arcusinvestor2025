@@ -510,6 +510,7 @@ add_action(
 						l.file_title,
 						l.file_name,
 						l.action,
+						l.notes,
 						l.timestamp
 					FROM {$wpdb->prefix}cb_download_log l
 					LEFT JOIN {$wpdb->users} u ON l.user_id = u.ID
