@@ -283,18 +283,6 @@ function cb_time_to_8601( $input_string ) {
     return $output;
 }
 
-
-/**
- * Dumps a variable in a readable format for debugging purposes.
- *
- * @param mixed $data The variable to be dumped.
- */
-function cbdump( $data ) {
-    echo '<pre>';
-    print_r( $data, true );
-    echo '</pre>';
-}
-
 /**
  * Converts a string into a slug format.
  *

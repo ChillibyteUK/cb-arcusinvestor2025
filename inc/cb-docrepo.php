@@ -1,13 +1,15 @@
 <?php
 /**
- * CB DocRepo - Handles document repository functionality.
+ * File: cb-docrepo.php
+ * Description: This file contains the implementation for managing the document repository, including download proxy, logging, and admin interface.
+ * Author: Chillibyte - DS
+ * Version: 1.0.0
  *
- * This file contains the implementation for managing the document repository,
- * including download proxy, logging, and admin interface.
- *
- * @file inc/cb-docrepo.php
- * @package cb-arcusinvestor2025
+ * @package CB_ArcusInvestor2025
+ * @subpackage Document Repository
  */
+
+defined( 'ABSPATH' ) || exit;
 
 require_once CB_THEME_DIR . '/inc/cb-docrepo-user.php';
 require_once CB_THEME_DIR . '/inc/cb-docrepo-admin.php';
@@ -98,7 +100,7 @@ add_action(
 					if ( file_exists( $file_path ) ) {
 						$mime_type = mime_content_type( $file_path );
 
-						if ( $mime_type === 'application/pdf' ) {
+						if ( 'application/pdf' === $mime_type ) {
 							// Watermark and stream PDF.
 							cb_watermark_pdf_stream( $file_path, $current_user->display_name, $current_user->user_email, $serial, $mode );
 							exit;
@@ -587,7 +589,6 @@ add_action(
  */
 function cb_render_files_list( $attachment_ids, $heading = '' ) {
 
-	// error_log( 'cb_render_files_list() called with attachment_ids: ' . print_r( $attachment_ids, true ) ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions
     $attachments = get_posts(
         array(
             'post_type'      => 'attachment',
