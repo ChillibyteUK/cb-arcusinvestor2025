@@ -895,6 +895,8 @@ function cb_render_watermark_verification() {
                 <div class="alert alert-success">
                     <h5>Watermark Verification - SUCCESS</h5>
                     <p><strong>Watermark Found:</strong> <?php echo esc_html( $result['watermark'] ); ?></p>
+                    <p><strong>UUID Source:</strong> <?php echo esc_html( ucfirst( $result['uuid_source'] ) ); ?></p>
+                    <p><strong>UUID:</strong> <?php echo esc_html( $result['uuid'] ); ?></p>
                     <p><strong>Download Log Match:</strong> Yes</p>
                     <p><strong>User:</strong> <?php echo esc_html( $result['user_name'] ); ?></p>
                     <p><strong>Download Date:</strong> <?php echo esc_html( $result['download_date'] ); ?></p>
@@ -906,6 +908,8 @@ function cb_render_watermark_verification() {
                 <div class="alert alert-warning">
                     <h5>Watermark Verification - NOT FOUND</h5>
                     <p><strong>Watermark Found:</strong> <?php echo esc_html( $result['watermark'] ); ?></p>
+                    <p><strong>UUID Source:</strong> <?php echo esc_html( ucfirst( $result['uuid_source'] ) ); ?></p>
+                    <p><strong>UUID:</strong> <?php echo esc_html( $result['uuid'] ); ?></p>
                     <p><strong>Download Log Match:</strong> No matching record found in download logs</p>
                     <p>This watermark does not correspond to any logged download event.</p>
                 </div>
@@ -913,9 +917,15 @@ function cb_render_watermark_verification() {
             } elseif ( 'no_watermark' === $result['status'] ) {
                 ?>
                 <div class="alert alert-danger">
-                    <h5>Watermark Verification - NO WATERMARK</h5>
-                    <p>No watermark metadata found in this PDF file.</p>
-                    <p>This file either wasn't downloaded through our system or the watermark has been removed.</p>
+                    <h5>Watermark Verification - NO UUID FOUND</h5>
+                    <?php if ( isset( $result['watermark'] ) && 'N/A' !== $result['watermark'] ) : ?>
+                        <p><strong>Watermark Found:</strong> <?php echo esc_html( $result['watermark'] ); ?></p>
+                        <p>Watermark metadata was found but does not contain a valid UUID.</p>
+                    <?php else : ?>
+                        <p>No watermark metadata found in this PDF file.</p>
+                    <?php endif; ?>
+                    <p>Also checked filename for UUID pattern - none found.</p>
+                    <p>This file either wasn't downloaded through our system or the watermark/filename has been modified.</p>
                 </div>
                 <?php
             } else {
@@ -959,22 +969,37 @@ function cb_handle_watermark_verification() {
 
         // Extract watermark from PDF.
         $watermark_data = cb_extract_pdf_watermark( $uploaded_file['tmp_name'] );
+        $uuid           = null;
+        $uuid_source    = 'none';
 
-        if ( ! $watermark_data ) {
-            $_SESSION['cb_verification_result'] = array(
-                'status' => 'no_watermark',
-            );
-            return;
+        // First, try to extract UUID from watermark metadata.
+        if ( $watermark_data ) {
+            $uuid = cb_extract_uuid_from_watermark( $watermark_data );
+            if ( $uuid ) {
+                $uuid_source = 'watermark';
+            }
         }
 
-        // Extract UUID from watermark.
-        $uuid = cb_extract_uuid_from_watermark( $watermark_data );
-
+        // If no UUID from watermark, try to extract from filename.
         if ( ! $uuid ) {
-            $_SESSION['cb_verification_result'] = array(
-                'status'    => 'no_watermark',
-                'watermark' => $watermark_data,
-            );
+            $uuid = cb_extract_uuid_from_filename( $uploaded_file['name'] );
+            if ( $uuid ) {
+                $uuid_source = 'filename';
+            }
+        }
+
+        // If no UUID found at all, return appropriate status.
+        if ( ! $uuid ) {
+            if ( $watermark_data ) {
+                $_SESSION['cb_verification_result'] = array(
+                    'status'    => 'no_watermark',
+                    'watermark' => $watermark_data,
+                );
+            } else {
+                $_SESSION['cb_verification_result'] = array(
+                    'status' => 'no_watermark',
+                );
+            }
             return;
         }
 
@@ -984,15 +1009,19 @@ function cb_handle_watermark_verification() {
         if ( $log_entry ) {
             $_SESSION['cb_verification_result'] = array(
                 'status'        => 'success',
-                'watermark'     => $watermark_data,
+                'watermark'     => $watermark_data ? $watermark_data : 'N/A',
+                'uuid'          => $uuid,
+                'uuid_source'   => $uuid_source,
                 'user_name'     => $log_entry['display_name'],
                 'download_date' => $log_entry['timestamp'],
                 'file_title'    => $log_entry['file_title'],
             );
         } else {
             $_SESSION['cb_verification_result'] = array(
-                'status'    => 'not_found',
-                'watermark' => $watermark_data,
+                'status'      => 'not_found',
+                'watermark'   => $watermark_data ? $watermark_data : 'N/A',
+                'uuid'        => $uuid,
+                'uuid_source' => $uuid_source,
             );
         }
     }
@@ -1031,6 +1060,26 @@ function cb_extract_uuid_from_watermark( $watermark ) {
         return trim( $parts[3] );
     }
 
+    return false;
+}
+
+/**
+ * Extract UUID from filename.
+ *
+ * @param string $filename The filename to extract UUID from.
+ * @return string|false UUID or false if not found.
+ */
+function cb_extract_uuid_from_filename( $filename ) {
+    // Expected filename format: {original_name}_{UUID}.{extension}.
+    // Extract the UUID from the filename before the extension.
+    $filename_parts = pathinfo( $filename );
+    $basename       = $filename_parts['filename']; // Filename without extension.
+    
+    // Look for pattern: anything_UUID where UUID is 36 characters (8-4-4-4-12).
+    if ( preg_match( '/.*_([a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12})$/i', $basename, $matches ) ) {
+        return $matches[1];
+    }
+    
     return false;
 }
 

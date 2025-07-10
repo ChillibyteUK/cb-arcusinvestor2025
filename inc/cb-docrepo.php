@@ -105,9 +105,13 @@ add_action(
 						}
 
 						// For non-PDFs: fallback to normal file stream.
+						$original_filename = basename( $file_path );
+						$filename_parts    = pathinfo( $original_filename );
+						$new_filename      = $filename_parts['filename'] . '_' . $serial . '.' . $filename_parts['extension'];
+						
 						header( 'Content-Description: File Transfer' );
 						header( 'Content-Type: ' . $mime_type );
-						header( 'Content-Disposition: ' . ( 'download' === $mode ? 'attachment' : 'inline' ) . '; filename="' . basename( $file_path ) . '"' );
+						header( 'Content-Disposition: ' . ( 'download' === $mode ? 'attachment' : 'inline' ) . '; filename="' . $new_filename . '"' );
 						header( 'Expires: 0' );
 						header( 'Cache-Control: must-revalidate' );
 						header( 'Pragma: public' );
@@ -195,9 +199,14 @@ function cb_watermark_pdf_stream( $file_path, $user_name, $user_email, $serial, 
 	// Update the download log with the appropriate status.
 	cb_update_download_log_status( $serial, $process_status );
 
+	// Create filename with UUID.
+	$original_filename = basename( $file_path );
+	$filename_parts    = pathinfo( $original_filename );
+	$new_filename      = $filename_parts['filename'] . '_' . $serial . '.pdf';
+
 	header( 'Content-Description: File Transfer' );
 	header( 'Content-Type: application/pdf' );
-	header( 'Content-Disposition: ' . ( 'download' === $mode ? 'attachment' : 'inline' ) . '; filename="' . basename( $file_path ) . '"' );
+	header( 'Content-Disposition: ' . ( 'download' === $mode ? 'attachment' : 'inline' ) . '; filename="' . $new_filename . '"' );
 	header( 'Expires: 0' );
 	header( 'Cache-Control: must-revalidate' );
 	header( 'Pragma: public' );
