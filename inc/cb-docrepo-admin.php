@@ -488,40 +488,50 @@ function cb_render_pending_approvals() {
  * Render the Logs tab.
  */
 function cb_render_logs() {
-    global $wpdb;
+	global $wpdb;
 
-    // Query for logs.
-    $cache_key = 'recent_logs_cache';
-    $logs      = wp_cache_get( $cache_key );
+	// Simple query - get all logs without server-side filtering
+	$cache_key = 'recent_logs_cache';
+	$logs      = wp_cache_get( $cache_key );
 
-    if ( false === $logs ) {
+	if ( false === $logs ) {
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
-        $logs = $wpdb->get_results(
-            "
-            SELECT l.user_id, u.display_name, l.folder_name, l.file_title, l.file_name, l.action, l.notes, l.timestamp
-            FROM {$wpdb->prefix}cb_download_log l
-            LEFT JOIN {$wpdb->users} u ON l.user_id = u.ID
-            ORDER BY l.timestamp DESC
-            LIMIT 50
-            ",
-            ARRAY_A
-        );
-        wp_cache_set( $cache_key, $logs, '', 3600 ); // Cache for 1 hour.
-    }
+		$logs = $wpdb->get_results(
+			"
+			SELECT l.user_id, u.display_name, l.folder_name, l.file_title, l.file_name, l.action, l.notes, l.timestamp
+			FROM {$wpdb->prefix}cb_download_log l
+			LEFT JOIN {$wpdb->users} u ON l.user_id = u.ID
+			ORDER BY l.timestamp DESC
+			LIMIT 100
+			",
+			ARRAY_A
+		);
+		wp_cache_set( $cache_key, $logs, '', 1800 ); // Cache for 30 minutes.
+	}
 
-    ?>
-    <div class="logs pt-4">
-        <h3>Logs</h3>
+	// Get unique actions for checkboxes
+	$all_actions = array();
+	foreach ( $logs as $log ) {
+		if ( ! in_array( $log['action'], $all_actions, true ) ) {
+			$all_actions[] = $log['action'];
+		}
+	}
+	sort( $all_actions );
 
+	?>
+	<div class="logs pt-4">
+		<h3>Logs</h3>
+
+		<!-- Export Forms -->
 		<form method="post">
-            <div class="row mb-4">
+			<div class="row mb-4">
 				<div class="col-md-4">
 					<button name="cb_export_file_access" class="btn btn-secondary btn-sm">Export File Access Log</button>
 				</div>
-                <div class="col-md-4">
+				<div class="col-md-4">
 					<button name="cb_export_logins" class="btn btn-secondary btn-sm">Export Login Activity</button>
-                </div>
-                <div class="col-md-4">
+				</div>
+				<div class="col-md-4">
 					<div class="row d-flex align-items-center">
 						<div class="col-md-6">
 							<select name="cb_user_id" class="form-select">
@@ -537,46 +547,151 @@ function cb_render_logs() {
 							<button name="cb_export_user_activity" class="btn btn-secondary btn-sm">Export User Activity</button>
 						</div>
 					</div>
-                </div>
-            </div>
-        </form>
-        <?php
-		if ( empty( $logs ) ) {
-			?>
-            <p>No logs available.</p>
-	        <?php
-		} else {
-			?>
+				</div>
+			</div>
+		</form>
+
+		<!-- Filter by Action -->
+		<div class="mb-4">
+			
+			<div class="d-flex flex-wrap gap-4 mb-3">
+				<strong>Filter by Action:</strong>
+				<div class="form-check d-flex align-items-center">
+					<input class="form-check-input" type="checkbox" id="show-all" checked>
+					<label class="form-check-label fw-bold" for="show-all">
+						Show All
+					</label>
+				</div>
+
+				<?php foreach ( $all_actions as $action ) : ?>
+				<div class="form-check d-flex align-items-center gap-2">
+					<input class="form-check-input action-filter" 
+						type="checkbox" 
+						value="<?php echo esc_attr( $action ); ?>" 
+						id="filter-<?php echo esc_attr( $action ); ?>">
+					<label class="form-check-label" for="filter-<?php echo esc_attr( $action ); ?>">
+						<?php echo esc_html( ucwords( str_replace( '_', ' ', $action ) ) ); ?>
+					</label>
+				</div>
+				<?php endforeach; ?>
+			</div>
+			
+			<!-- div>
+				<span class="text-muted" id="filter-status">Showing all entries</span>
+			</div -->
+		</div>
+
+		<?php if ( empty( $logs ) ) : ?>
+			<div class="alert alert-info">
+				<p class="mb-0">No logs available.</p>
+			</div>
+		<?php else : ?>
 			<h4>Recent Activity</h4>
-            <table class="table table-striped table-hover table-sm small">
-                <thead class="table-dark">
-                    <tr>
-                        <th>Timestamp</th>
-                        <th>User</th>
-                        <th>Action</th>
-                        <th>Folder</th>
-                        <th>File Name</th>
-                        <th>Notes</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php foreach ( $logs as $log ) : ?>
-                        <tr>
+			<table class="table table-striped table-hover table-sm small" id="logs-table">
+				<thead class="table-dark">
+					<tr>
+						<th>Timestamp</th>
+						<th>User</th>
+						<th>Action</th>
+						<th>Folder</th>
+						<th>File Name</th>
+						<th>Notes</th>
+					</tr>
+				</thead>
+				<tbody>
+					<?php foreach ( $logs as $log ) : ?>
+						<tr data-action="<?php echo esc_attr( $log['action'] ); ?>">
 							<td><?php echo esc_html( $log['timestamp'] ); ?></td>
-                            <td><?php echo esc_html( $log['display_name'] ); ?></td>
-                            <td><?php echo esc_html( ucfirst( $log['action'] ) ); ?></td>
-                            <td><?php echo esc_html( $log['folder_name'] ?? 'N/A' ); ?></td>
-                            <td><?php echo esc_html( $log['file_name'] ?? 'N/A' ); ?></td>
-                            <td><?php echo esc_html( $log['notes'] ?? 'N/A' ); ?></td>
-                        </tr>
-                    <?php endforeach; ?>
-                </tbody>
-            </table>
-        	<?php
+							<td><?php echo esc_html( $log['display_name'] ); ?></td>
+							<td><?php echo esc_html( ucwords( str_replace( '_', ' ', $log['action'] ) ) ); ?></td>
+							<td><?php echo esc_html( $log['folder_name'] ?? 'N/A' ); ?></td>
+							<td><?php echo esc_html( $log['file_name'] ?? 'N/A' ); ?></td>
+							<td><?php echo esc_html( $log['notes'] ?? 'N/A' ); ?></td>
+						</tr>
+					<?php endforeach; ?>
+				</tbody>
+			</table>
+		<?php endif; ?>
+	</div>
+
+	<script>
+	document.addEventListener('DOMContentLoaded', function() {
+		const showAllCheckbox = document.getElementById('show-all');
+		const actionCheckboxes = document.querySelectorAll('.action-filter');
+		const tableRows = document.querySelectorAll('#logs-table tbody tr');
+		const statusSpan = document.getElementById('filter-status');
+
+		function updateTable() {
+			let visibleCount = 0;
+			const checkedActions = [];
+			
+			// Get checked actions
+			actionCheckboxes.forEach(checkbox => {
+				if (checkbox.checked) {
+					checkedActions.push(checkbox.value);
+				}
+			});
+
+			// Show/hide rows based on filter state
+			tableRows.forEach(row => {
+				const action = row.getAttribute('data-action');
+				
+				// If "Show All" is checked or no specific actions are selected, show all rows
+				if (showAllCheckbox.checked || checkedActions.length === 0) {
+					row.style.display = '';
+					visibleCount++;
+				} else if (checkedActions.includes(action)) {
+					// Show only rows matching selected actions
+					row.style.display = '';
+					visibleCount++;
+				} else {
+					row.style.display = 'none';
+				}
+			});
+
+			// Update status
+			if (showAllCheckbox.checked || checkedActions.length === 0) {
+				statusSpan.textContent = 'Showing all entries (' + visibleCount + ')';
+			} else {
+				statusSpan.textContent = 'Showing ' + visibleCount + ' entries for: ' + 
+					checkedActions.map(a => a.replace(/_/g, ' ')).join(', ');
+			}
 		}
-		?>
-    </div>
-    <?php
+
+		// Show all checkbox
+		showAllCheckbox.addEventListener('change', function() {
+			if (showAllCheckbox.checked) {
+				// When "Show All" is checked, uncheck all individual filters
+				actionCheckboxes.forEach(checkbox => {
+					checkbox.checked = false;
+				});
+			}
+			updateTable();
+		});
+
+		// Individual action checkboxes
+		actionCheckboxes.forEach(checkbox => {
+			checkbox.addEventListener('change', function() {
+				if (checkbox.checked) {
+					// When any individual action is checked, uncheck "Show All"
+					showAllCheckbox.checked = false;
+				} else {
+					// If no individual actions are checked, check "Show All"
+					const anyChecked = Array.from(actionCheckboxes).some(cb => cb.checked);
+					if (!anyChecked) {
+						showAllCheckbox.checked = true;
+					}
+				}
+				
+				updateTable();
+			});
+		});
+
+		// Initial update
+		updateTable();
+	});
+	</script>
+	<?php
 }
 
 /**
@@ -891,32 +1006,15 @@ add_action( 'admin_init', 'cb_handle_watermark_verification' );
  * @return string|false Watermark string or false if not found.
  */
 function cb_extract_pdf_watermark( $file_path ) {
-    try {
-        require_once get_stylesheet_directory() . '/vendor/autoload.php';
-
-        // Use FPDI to read the PDF.
-        $pdf = new \setasign\Fpdi\Fpdi();
-        $pdf->setSourceFile( $file_path );
-
-        // Get the PDF info (this is a simplified approach).
-        // Note: FPDI doesn't directly provide metadata access, so we'll use an alternative approach.
-        $content = file_get_contents( $file_path );
-
-        // Search for Keywords in PDF content.
-        if ( preg_match( '/\/Keywords\s*\((.*?)\)/', $content, $matches ) ) {
-            $keywords = $matches[1];
-
-            // Look for our watermark starting with "Downloaded by ".
-            if ( strpos( $keywords, 'Downloaded by ' ) !== false ) {
-                return $keywords;
-            }
-        }
-
-        return false;
-
-    } catch ( Exception $e ) {
-        return false;
-    }
+	// Use the same metadata extraction approach that's already working.
+	$metadata = cb_extract_pdf_metadata( $file_path );
+	
+	// Check if the Keywords field contains our watermark format.
+	if ( ! empty( $metadata['keywords'] ) && strpos( $metadata['keywords'], 'Downloaded by ' ) !== false ) {
+		return $metadata['keywords'];
+	}
+	
+	return false;
 }
 
 /**
@@ -1007,7 +1105,8 @@ function cb_render_pdf_report() {
                             <th>Producer</th>
                             <th>File Size</th>
                             <th>Modified</th>
-                            <th>Editable</th>
+                            <th>Watermark</th>
+                            <th>Metadata</th>
                             <th>Encrypted</th>
                         </tr>
                     </thead>
@@ -1021,7 +1120,14 @@ function cb_render_pdf_report() {
                                 <td><?php echo esc_html( $pdf_info['file_size'] ); ?></td>
                                 <td><?php echo esc_html( $pdf_info['modified'] ); ?></td>
                                 <td>
-                                    <?php if ( $pdf_info['is_editable'] ) : ?>
+                                    <?php if ( $pdf_info['watermark_compatible'] ) : ?>
+                                        <span class="badge bg-success">Yes</span>
+                                    <?php else : ?>
+                                        <span class="badge bg-danger">No</span>
+                                    <?php endif; ?>
+                                </td>
+                                <td>
+                                    <?php if ( $pdf_info['metadata_compatible'] ) : ?>
                                         <span class="badge bg-success">Yes</span>
                                     <?php else : ?>
                                         <span class="badge bg-danger">No</span>
@@ -1085,7 +1191,8 @@ function cb_handle_pdf_report() {
                 'File Size',
                 'Modified',
                 'Encrypted',
-                'Editable',
+                'Watermark',
+                'Metadata',
             );
 
             // Add data rows.
@@ -1098,7 +1205,8 @@ function cb_handle_pdf_report() {
                     $pdf_info['file_size'],
                     $pdf_info['modified'],
                     ( isset( $pdf_info['encrypted'] ) && $pdf_info['encrypted'] ) ? 'Yes' : 'No',
-                    $pdf_info['is_editable'] ? 'Yes' : 'No',
+                    $pdf_info['watermark_compatible'] ? 'Yes' : 'No',
+                    $pdf_info['metadata_compatible'] ? 'Yes' : 'No',
                 );
             }
 
@@ -1131,11 +1239,12 @@ function cb_analyze_pdf_files() {
         $file_path = get_attached_file( $attachment->ID );
 
         if ( file_exists( $file_path ) ) {
-            $pdf_info                = cb_extract_pdf_metadata( $file_path );
-            $pdf_info['filename']    = basename( $file_path );
-            $pdf_info['file_size']   = size_format( filesize( $file_path ) );
-            $pdf_info['modified']    = gmdate( 'Y-m-d H:i:s', filemtime( $file_path ) );
-            $pdf_info['is_editable'] = cb_test_pdf_editability( $file_path );
+            $pdf_info                         = cb_extract_pdf_metadata( $file_path );
+            $pdf_info['filename']             = basename( $file_path );
+            $pdf_info['file_size']            = size_format( filesize( $file_path ) );
+            $pdf_info['modified']             = gmdate( 'Y-m-d H:i:s', filemtime( $file_path ) );
+            $pdf_info['watermark_compatible'] = cb_test_pdf_watermark_compatibility( $file_path );
+            $pdf_info['metadata_compatible']  = cb_test_pdf_metadata_compatibility( $file_path );
 
             $pdf_files[] = $pdf_info;
         }
@@ -1770,3 +1879,87 @@ function cb_is_pdf_encrypted( $file_path ) {
 
     return false;
 }
+
+/**
+ * Test if a PDF supports watermarking (visual watermark + metadata).
+ *
+ * @param string $file_path Path to the PDF file.
+ * @return bool True if watermarking is supported, false otherwise.
+ */
+function cb_test_pdf_watermark_compatibility( $file_path ) {
+    try {
+        require_once get_stylesheet_directory() . '/vendor/autoload.php';
+
+        $pdf        = new \setasign\Fpdi\Fpdi();
+        $page_count = $pdf->setSourceFile( $file_path );
+
+        // Test if we can add a page and watermark.
+        if ( $page_count > 0 ) {
+            $tpl_id = $pdf->importPage( 1 );
+            $size   = $pdf->getTemplateSize( $tpl_id );
+
+            $orientation = ( $size['width'] > $size['height'] ) ? 'L' : 'P';
+            $pdf->AddPage( $orientation, array( $size['width'], $size['height'] ) );
+            $pdf->useTemplate( $tpl_id, 0, 0, $size['width'], $size['height'], true );
+
+            // Test watermark addition.
+            $pdf->SetFont( 'Arial', '', 6 );
+            $pdf->SetTextColor( 100, 100, 100 );
+            $pdf->SetXY( 5, 5 );
+            $pdf->Cell( 0, 5, 'Test Watermark', 0, 0, 'L' );
+
+            // Test metadata addition.
+            $pdf->SetKeywords( 'Test Keywords' );
+
+            return true;
+        }
+
+        return false;
+
+    } catch ( Exception $e ) {
+        return false;
+    }
+}
+
+/**
+ * Test if a PDF supports metadata addition (without visual watermark).
+ *
+ * @param string $file_path Path to the PDF file.
+ * @return bool True if metadata addition is supported, false otherwise.
+ */
+function cb_test_pdf_metadata_compatibility( $file_path ) {
+    // Actually test the metadata addition process
+    $temp_output = tempnam( sys_get_temp_dir(), 'metadata_test_' );
+    $test_watermark = 'Test metadata: ' . time();
+    
+    $result = cb_add_metadata_only_pdf( $file_path, $temp_output, $test_watermark );
+    
+    // Clean up
+    if ( file_exists( $temp_output ) ) {
+        unlink( $temp_output );
+    }
+    
+    return $result;
+}
+
+/**
+ * Test if a PDF supports direct metadata modification without rewriting.
+ *
+ * @param string $file_path Path to the PDF file.
+ * @return bool True if direct metadata modification is possible, false otherwise.
+ */
+function cb_test_direct_metadata_modification( $file_path ) {
+	// Actually test the metadata modification process
+	$temp_output = tempnam( sys_get_temp_dir(), 'metadata_test_' );
+	$test_watermark = 'Test metadata: ' . time();
+	
+	$result = cb_add_direct_metadata_modification( $file_path, $temp_output, $test_watermark );
+	
+	// Clean up
+	if ( file_exists( $temp_output ) ) {
+		unlink( $temp_output );
+	}
+	
+	return $result;
+}
+
