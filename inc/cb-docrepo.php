@@ -1,15 +1,13 @@
 <?php
 /**
- * File: cb-docrepo.php
- * Description: This file contains the implementation for managing the document repository, including download proxy, logging, and admin interface.
- * Author: Chillibyte - DS
- * Version: 1.0.0
+ * CB DocRepo - Document Repository Functionality
  *
- * @package CB_ArcusInvestor2025
- * @subpackage Document Repository
+ * This file contains the implementation for managing the document repository,
+ * including download proxy, logging, and admin interface.
+ *
+ * @file inc/cb-docrepo.php
+ * @package cb-arcusinvestor2025
  */
-
-defined( 'ABSPATH' ) || exit;
 
 require_once CB_THEME_DIR . '/inc/cb-docrepo-user.php';
 require_once CB_THEME_DIR . '/inc/cb-docrepo-admin.php';
@@ -147,6 +145,9 @@ function cb_watermark_pdf_stream( $file_path, $user_name, $user_email, $serial, 
 	try {
 		$pdf        = new \setasign\Fpdi\Fpdi();
 		$page_count = $pdf->setSourceFile( $file_path );
+
+		// Add watermark string as metadata.
+		$pdf->SetKeywords( $watermark );
 
 		for ( $i = 1; $i <= $page_count; $i++ ) {
 			$tpl_id = $pdf->importPage( $i );

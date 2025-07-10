@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Output CSV header
-echo "Filename,Title,Author,Creator"
+echo "Filename,Title,Author,Creator,Producer"
 
 # Loop through all PDF files in the current directory
 for file in *.pdf; do
@@ -10,7 +10,8 @@ for file in *.pdf; do
     title=$(pdfinfo "$file" | awk -F': ' '/^Title:/ {print $2}' | sed 's/,/ /g' | sed 's/^[ \t]*//;s/[ \t]*$//')
     author=$(pdfinfo "$file" | awk -F': ' '/^Author:/ {print $2}' | sed 's/,/ /g' | sed 's/^[ \t]*//;s/[ \t]*$//')
     creator=$(pdfinfo "$file" | awk -F': ' '/^Creator:/ {print $2}' | sed 's/,/ /g' | sed 's/^[ \t]*//;s/[ \t]*$//')
+    producer=$(pdfinfo "$file" | awk -F': ' '/^Producer:/ {print $2}' | sed 's/,/ /g' | sed 's/^[ \t]*//;s/[ \t]*$//')
 
-    echo "\"$file\",\"$title\",\"$author\",\"$creator\""
+    echo "\"$file\",\"$title\",\"$author\",\"$creator\",\"$producer\""
 done
 
