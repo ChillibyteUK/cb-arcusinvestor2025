@@ -383,7 +383,7 @@ function cb_render_document_management_page() {
                 <a class="nav-link" href="#summary" data-bs-toggle="tab">Summary</a>
             </li> -->
             <li class="nav-item mb-0">
-                <a class="nav-link <?php echo ( $has_verification_results && ! $has_pdf_report_results ) ? 'active' : ''; ?>" href="#watermark-verification" data-bs-toggle="tab">Watermark Verification</a>
+                <a class="nav-link <?php echo ( $has_verification_results && ! $has_pdf_report_results ) ? 'active' : ''; ?>" href="#document-verification" data-bs-toggle="tab">Document Verification</a>
             </li>
             <li class="nav-item mb-0">
                 <a class="nav-link <?php echo $has_pdf_report_results ? 'active' : ''; ?>" href="#pdf-report" data-bs-toggle="tab">PDF Report</a>
@@ -399,8 +399,8 @@ function cb_render_document_management_page() {
             <!-- <div class="tab-pane fade" id="summary">
                 <?php cb_render_summary(); ?>
             </div> -->
-            <div class="tab-pane fade <?php echo ( $has_verification_results && ! $has_pdf_report_results ) ? 'show active' : ''; ?>" id="watermark-verification">
-                <?php cb_render_watermark_verification(); ?>
+            <div class="tab-pane fade <?php echo ( $has_verification_results && ! $has_pdf_report_results ) ? 'show active' : ''; ?>" id="document-verification">
+                <?php cb_render_document_verification(); ?>
             </div>
             <div class="tab-pane fade <?php echo $has_pdf_report_results ? 'show active' : ''; ?>" id="pdf-report">
                 <?php cb_render_pdf_report(); ?>
@@ -863,25 +863,25 @@ function cb_handle_document_actions() {
 add_action( 'admin_init', 'cb_handle_document_actions' );
 
 /**
- * Render the Watermark Verification tab.
+ * Render the Document Verification tab.
  */
-function cb_render_watermark_verification() {
+function cb_render_document_verification() {
     ?>
-    <div class="watermark-verification pt-4">
-        <h3>Watermark Verification</h3>
-        <p>Upload a PDF file to verify if it contains a valid watermark and matches our download logs.</p>
+    <div class="document-verification pt-4">
+        <h3>Document Verification</h3>
+        <p>Upload a PDF or XLSX file to verify if it contains valid tracking information and matches our download logs.</p>
         
         <form method="post" enctype="multipart/form-data" class="mb-4">
             <div class="row">
                 <div class="col-md-6">
-                    <label for="cb_verify_file" class="form-label">Select PDF File</label>
-                    <input type="file" class="form-control" id="cb_verify_file" name="cb_verify_file" accept=".pdf" required>
+                    <label for="cb_verify_file" class="form-label">Select PDF or XLSX File</label>
+                    <input type="file" class="form-control" id="cb_verify_file" name="cb_verify_file" accept=".pdf,.xlsx,.xls" required>
                 </div>
                 <div class="col-md-6 d-flex align-items-end">
-                    <button type="submit" name="cb_verify_watermark" class="btn btn-primary">Verify Watermark</button>
+                    <button type="submit" name="cb_verify_document" class="btn btn-primary">Verify Document</button>
                 </div>
             </div>
-            <?php wp_nonce_field( 'cb_verify_watermark_nonce', 'cb_verify_nonce' ); ?>
+            <?php wp_nonce_field( 'cb_verify_document_nonce', 'cb_verify_nonce' ); ?>
         </form>
 
         <?php
@@ -893,9 +893,15 @@ function cb_render_watermark_verification() {
             if ( 'success' === $result['status'] ) {
                 ?>
                 <div class="alert alert-success">
-                    <h5>Watermark Verification - SUCCESS</h5>
-                    <p><strong>Watermark Found:</strong> <?php echo esc_html( $result['watermark'] ); ?></p>
-                    <p><strong>UUID Source:</strong> <?php echo esc_html( ucfirst( $result['uuid_source'] ) ); ?></p>
+                    <h5>Document Verification - SUCCESS</h5>
+                    <p><strong>File Type:</strong> <?php echo esc_html( strtoupper( $result['file_type'] ) ); ?></p>
+                    <?php if ( 'pdf' === $result['file_type'] ) : ?>
+                        <p><strong>Watermark Found:</strong> <?php echo esc_html( $result['watermark'] ); ?></p>
+                        <p><strong>UUID Source:</strong> <?php echo esc_html( ucfirst( $result['uuid_source'] ) ); ?></p>
+                    <?php else : ?>
+                        <p><strong>Tracking Info Found:</strong> <?php echo esc_html( $result['tracking_info'] ); ?></p>
+                        <p><strong>UUID Source:</strong> XLSX Properties</p>
+                    <?php endif; ?>
                     <p><strong>UUID:</strong> <?php echo esc_html( $result['uuid'] ); ?></p>
                     <p><strong>Download Log Match:</strong> Yes</p>
                     <p><strong>User:</strong> <?php echo esc_html( $result['user_name'] ); ?></p>
@@ -906,32 +912,44 @@ function cb_render_watermark_verification() {
             } elseif ( 'not_found' === $result['status'] ) {
                 ?>
                 <div class="alert alert-warning">
-                    <h5>Watermark Verification - NOT FOUND</h5>
-                    <p><strong>Watermark Found:</strong> <?php echo esc_html( $result['watermark'] ); ?></p>
-                    <p><strong>UUID Source:</strong> <?php echo esc_html( ucfirst( $result['uuid_source'] ) ); ?></p>
+                    <h5>Document Verification - NOT FOUND</h5>
+                    <p><strong>File Type:</strong> <?php echo esc_html( strtoupper( $result['file_type'] ) ); ?></p>
+                    <?php if ( 'pdf' === $result['file_type'] ) : ?>
+                        <p><strong>Watermark Found:</strong> <?php echo esc_html( $result['watermark'] ); ?></p>
+                        <p><strong>UUID Source:</strong> <?php echo esc_html( ucfirst( $result['uuid_source'] ) ); ?></p>
+                    <?php else : ?>
+                        <p><strong>Tracking Info Found:</strong> <?php echo esc_html( $result['tracking_info'] ); ?></p>
+                        <p><strong>UUID Source:</strong> XLSX Properties</p>
+                    <?php endif; ?>
                     <p><strong>UUID:</strong> <?php echo esc_html( $result['uuid'] ); ?></p>
                     <p><strong>Download Log Match:</strong> No matching record found in download logs</p>
-                    <p>This watermark does not correspond to any logged download event.</p>
+                    <p>This tracking information does not correspond to any logged download event.</p>
                 </div>
                 <?php
-            } elseif ( 'no_watermark' === $result['status'] ) {
+            } elseif ( 'no_tracking' === $result['status'] ) {
                 ?>
                 <div class="alert alert-danger">
-                    <h5>Watermark Verification - NO UUID FOUND</h5>
-                    <?php if ( isset( $result['watermark'] ) && 'N/A' !== $result['watermark'] ) : ?>
-                        <p><strong>Watermark Found:</strong> <?php echo esc_html( $result['watermark'] ); ?></p>
-                        <p>Watermark metadata was found but does not contain a valid UUID.</p>
+                    <h5>Document Verification - NO TRACKING FOUND</h5>
+                    <p><strong>File Type:</strong> <?php echo esc_html( strtoupper( $result['file_type'] ) ); ?></p>
+                    <?php if ( 'pdf' === $result['file_type'] ) : ?>
+                        <?php if ( isset( $result['watermark'] ) && 'N/A' !== $result['watermark'] ) : ?>
+                            <p><strong>Watermark Found:</strong> <?php echo esc_html( $result['watermark'] ); ?></p>
+                            <p>Watermark metadata was found but does not contain a valid UUID.</p>
+                        <?php else : ?>
+                            <p>No watermark metadata found in this PDF file.</p>
+                        <?php endif; ?>
+                        <p>Also checked filename for UUID pattern - none found.</p>
                     <?php else : ?>
-                        <p>No watermark metadata found in this PDF file.</p>
+                        <p>No tracking information found in XLSX properties or hidden sheets.</p>
+                        <p>Also checked filename for UUID pattern - none found.</p>
                     <?php endif; ?>
-                    <p>Also checked filename for UUID pattern - none found.</p>
-                    <p>This file either wasn't downloaded through our system or the watermark/filename has been modified.</p>
+                    <p>This file either wasn't downloaded through our system or the tracking information has been modified.</p>
                 </div>
                 <?php
             } else {
                 ?>
                 <div class="alert alert-danger">
-                    <h5>Watermark Verification - ERROR</h5>
+                    <h5>Document Verification - ERROR</h5>
                     <p><?php echo esc_html( $result['message'] ); ?></p>
                 </div>
                 <?php
@@ -943,10 +961,10 @@ function cb_render_watermark_verification() {
 }
 
 /**
- * Handle watermark verification upload and processing.
+ * Handle document verification upload and processing.
  */
-function cb_handle_watermark_verification() {
-    if ( isset( $_POST['cb_verify_watermark'] ) && isset( $_POST['cb_verify_nonce'] ) && wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['cb_verify_nonce'] ) ), 'cb_verify_watermark_nonce' ) ) {
+function cb_handle_document_verification() {
+    if ( isset( $_POST['cb_verify_document'] ) && isset( $_POST['cb_verify_nonce'] ) && wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['cb_verify_nonce'] ) ), 'cb_verify_document_nonce' ) ) {
 
         if ( ! isset( $_FILES['cb_verify_file'] ) || ! isset( $_FILES['cb_verify_file']['error'] ) || UPLOAD_ERR_OK !== $_FILES['cb_verify_file']['error'] ) {
             $_SESSION['cb_verification_result'] = array(
@@ -957,76 +975,116 @@ function cb_handle_watermark_verification() {
         }
 
         $uploaded_file = $_FILES['cb_verify_file'];
+        $file_extension = strtolower( pathinfo( $uploaded_file['name'], PATHINFO_EXTENSION ) );
 
         // Validate file type.
-        if ( 'application/pdf' !== $uploaded_file['type'] ) {
+        if ( ! in_array( $uploaded_file['type'], array( 'application/pdf', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'application/vnd.ms-excel' ), true ) &&
+             ! in_array( $file_extension, array( 'pdf', 'xlsx', 'xls' ), true ) ) {
             $_SESSION['cb_verification_result'] = array(
                 'status'  => 'error',
-                'message' => 'Only PDF files are allowed.',
+                'message' => 'Only PDF and XLSX files are allowed.',
             );
             return;
         }
 
-        // Extract watermark from PDF.
-        $watermark_data = cb_extract_pdf_watermark( $uploaded_file['tmp_name'] );
-        $uuid           = null;
-        $uuid_source    = 'none';
+        $uuid        = null;
+        $uuid_source = 'none';
+        $file_type   = $file_extension;
 
-        // First, try to extract UUID from watermark metadata.
-        if ( $watermark_data ) {
-            $uuid = cb_extract_uuid_from_watermark( $watermark_data );
-            if ( $uuid ) {
-                $uuid_source = 'watermark';
-            }
-        }
+        // Handle PDF files.
+        if ( 'pdf' === $file_extension ) {
+            // Extract watermark from PDF.
+            $watermark_data = cb_extract_pdf_watermark( $uploaded_file['tmp_name'] );
 
-        // If no UUID from watermark, try to extract from filename.
-        if ( ! $uuid ) {
-            $uuid = cb_extract_uuid_from_filename( $uploaded_file['name'] );
-            if ( $uuid ) {
-                $uuid_source = 'filename';
-            }
-        }
-
-        // If no UUID found at all, return appropriate status.
-        if ( ! $uuid ) {
+            // First, try to extract UUID from watermark metadata.
             if ( $watermark_data ) {
-                $_SESSION['cb_verification_result'] = array(
-                    'status'    => 'no_watermark',
-                    'watermark' => $watermark_data,
+                $uuid = cb_extract_uuid_from_watermark( $watermark_data );
+                if ( $uuid ) {
+                    $uuid_source = 'watermark';
+                }
+            }
+
+            // If no UUID from watermark, try to extract from filename.
+            if ( ! $uuid ) {
+                $uuid = cb_extract_uuid_from_filename( $uploaded_file['name'] );
+                if ( $uuid ) {
+                    $uuid_source = 'filename';
+                }
+            }
+
+            // Store results for display.
+            if ( ! $uuid ) {
+                if ( $watermark_data ) {
+                    $_SESSION['cb_verification_result'] = array(
+                        'status'    => 'no_tracking',
+                        'file_type' => $file_type,
+                        'watermark' => $watermark_data,
+                    );
+                } else {
+                    $_SESSION['cb_verification_result'] = array(
+                        'status'    => 'no_tracking',
+                        'file_type' => $file_type,
+                    );
+                }
+                return;
+            }
+
+            $verification_data = array(
+                'watermark'   => $watermark_data ? $watermark_data : 'N/A',
+                'uuid_source' => $uuid_source,
+            );
+
+        } elseif ( in_array( $file_extension, array( 'xlsx', 'xls' ), true ) ) {
+            // Handle XLSX files.
+            $tracking_data = cb_extract_xlsx_tracking( $uploaded_file['tmp_name'] );
+
+            if ( $tracking_data && isset( $tracking_data['uuid'] ) ) {
+                $uuid        = $tracking_data['uuid'];
+                $uuid_source = 'xlsx_properties';
+                
+                $verification_data = array(
+                    'tracking_info' => isset( $tracking_data['tracking'] ) ? $tracking_data['tracking'] : 'UUID: ' . $uuid,
                 );
             } else {
-                $_SESSION['cb_verification_result'] = array(
-                    'status' => 'no_watermark',
-                );
+                // Try to extract UUID from filename.
+                $uuid = cb_extract_uuid_from_filename( $uploaded_file['name'] );
+                if ( $uuid ) {
+                    $uuid_source = 'filename';
+                    $verification_data = array(
+                        'tracking_info' => 'UUID extracted from filename',
+                    );
+                } else {
+                    $_SESSION['cb_verification_result'] = array(
+                        'status'    => 'no_tracking',
+                        'file_type' => $file_type,
+                    );
+                    return;
+                }
             }
-            return;
         }
 
         // Check download log for matching UUID.
         $log_entry = cb_find_download_log_by_uuid( $uuid );
 
         if ( $log_entry ) {
-            $_SESSION['cb_verification_result'] = array(
+            $_SESSION['cb_verification_result'] = array_merge( array(
                 'status'        => 'success',
-                'watermark'     => $watermark_data ? $watermark_data : 'N/A',
+                'file_type'     => $file_type,
                 'uuid'          => $uuid,
-                'uuid_source'   => $uuid_source,
                 'user_name'     => $log_entry['display_name'],
                 'download_date' => $log_entry['timestamp'],
                 'file_title'    => $log_entry['file_title'],
-            );
+            ), $verification_data );
         } else {
-            $_SESSION['cb_verification_result'] = array(
-                'status'      => 'not_found',
-                'watermark'   => $watermark_data ? $watermark_data : 'N/A',
-                'uuid'        => $uuid,
-                'uuid_source' => $uuid_source,
-            );
+            $_SESSION['cb_verification_result'] = array_merge( array(
+                'status'    => 'not_found',
+                'file_type' => $file_type,
+                'uuid'      => $uuid,
+            ), $verification_data );
         }
     }
 }
-add_action( 'admin_init', 'cb_handle_watermark_verification' );
+add_action( 'admin_init', 'cb_handle_document_verification' );
 
 /**
  * Extract watermark metadata from PDF file.
