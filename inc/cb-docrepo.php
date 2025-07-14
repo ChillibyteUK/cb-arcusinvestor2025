@@ -822,6 +822,10 @@ function cb_update_download_log_status( $serial, $process_status ) {
 		$notes_content = $serial; // UUID for verification + visual watermark
 	} elseif ( 'metadata' === $process_status ) {
 		$notes_content = $serial; // UUID for verification (metadata-only)
+	} elseif ( 'tagged' === $process_status ) {
+		$notes_content = $serial; // UUID for verification (XLSX with tracking info)
+	} elseif ( 'original' === $process_status ) {
+		$notes_content = $serial; // UUID for verification (XLSX original, tracking in filename)
 	} else {
 		$notes_content = 'not editable'; // No processing done, no UUID to verify
 	}
