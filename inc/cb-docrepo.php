@@ -67,22 +67,20 @@ add_action(
 					wp_cache_set( $cache_key, $folder_name, 'cb_download_proxy' );
 				}
 
-				// phpcs:ignore WordPress.WP.Capabilities.Unknown
-				if ( user_can( $user_id, 'portal_user' ) ) {
-					// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
-					$wpdb->insert(
-						$wpdb->prefix . 'cb_download_log',
-						array(
-							'user_id'       => $user_id,
-							'attachment_id' => $file_id,
-							'file_title'    => $file_title,
-                            'file_name'     => $file_name,
-                            'folder_name'   => $folder_name,
-							'action'        => $mode,
-							'notes'         => $serial,
-						)
-					);
-				}
+				// Log download/view action for all users (regardless of role)
+				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+				$wpdb->insert(
+					$wpdb->prefix . 'cb_download_log',
+					array(
+						'user_id'       => $user_id,
+						'attachment_id' => $file_id,
+						'file_title'    => $file_title,
+						'file_name'     => $file_name,
+						'folder_name'   => $folder_name,
+						'action'        => $mode,
+						'notes'         => $serial,
+					)
+				);
 
 				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
 				$folder_id = $wpdb->get_var(
