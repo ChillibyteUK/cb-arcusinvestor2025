@@ -21788,6 +21788,16 @@ strong,
   width: 100px;
   max-width: 100px;
 }
+.header .nav-button {
+  border: 1px solid var(--col-red-400);
+  display: grid;
+  place-content: center;
+  align-self: center;
+}
+.header .nav-button .nav-link {
+  font-size: var(--fs-200);
+  padding-block: 0.25rem !important;
+}
 
 :not(.homepage) header {
   --_nav-offset: var(--nav-offset-top);
