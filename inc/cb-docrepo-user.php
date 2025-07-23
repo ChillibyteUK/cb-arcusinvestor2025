@@ -635,6 +635,28 @@ function cb_get_user_rml_folder_ids( $user_id = null ) {
 }
 
 
+// ---------------------- Email Configuration --------------------- //
+
+/**
+ * Custom email sender address and name.
+ *
+ * Changes the default WordPress sender from "wordpress@domain.com"
+ * to a custom email address and sender name for all outgoing emails.
+ */
+add_filter(
+	'wp_mail_from',
+	function () {
+		return 'info@arcusinvest.com';
+	}
+);
+
+add_filter(
+	'wp_mail_from_name',
+	function () {
+		return 'Arcus Investment Management';
+	}
+);
+
 // ---------------------- Password Reset --------------------- //
 
 /**
