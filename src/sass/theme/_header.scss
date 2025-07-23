@@ -40,17 +40,6 @@
         width: 100px;
         max-width: 100px;
     }
-
-    .nav-button {
-        border: 1px solid var(--col-red-400);
-        display: grid;
-        place-content: center;
-        align-self: center;
-        .nav-link {
-            font-size: var(--fs-200);
-            padding-block: 0.25rem !important;
-        }
-    }
 }
 
 :not(.homepage) header {
