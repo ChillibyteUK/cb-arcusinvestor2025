@@ -73,6 +73,12 @@ define( 'CB_RENDERING_FOOTER', true );
             </div>
         </div>
 </footer>
+<?php
+if ( 'https://arcusinvestor.chillihosting.co.uk' === site_url() ) {
+// if ( 'http://investor.local' === site_url() ) {
+	echo '<div style="z-index:9999;" class="w-100 bg-danger text-white text-center py-2 mb-0" role="alert">This is the development site.</div>';
+}
+?>
 <?php wp_footer(); ?>
 </body>
 
