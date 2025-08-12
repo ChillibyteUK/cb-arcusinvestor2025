@@ -11,20 +11,43 @@
 // phpcs:disable WordPress.Security.NonceVerification.Recommended
 // phpcs:disable WordPress.Security.NonceVerification.Missing
 
+// add_filter(
+// 	'authenticate',
+// 	function ( $user, $username, $password ) {
+// 		if ( isset( $_POST['log'] ) && ! empty( $_POST['log'] ) && isset( $_POST['pwd'] ) ) {
+// 			$user = wp_authenticate_username_password( null, $username, $password );
+// 			if ( is_wp_error( $user ) ) {
+// 				wp_safe_redirect( add_query_arg( 'login', 'failed', wp_get_referer() ) );
+// 				exit;
+// 			}
+// 		}
+// 		return $user;
+// 	},
+// 	30,
+// 	3
+// );
+
 add_filter(
-	'authenticate',
-	function ( $user, $username, $password ) {
-		if ( isset( $_POST['log'] ) && ! empty( $_POST['log'] ) && isset( $_POST['pwd'] ) ) {
-			$user = wp_authenticate_username_password( null, $username, $password );
-			if ( is_wp_error( $user ) ) {
-				wp_safe_redirect( add_query_arg( 'login', 'failed', wp_get_referer() ) );
-				exit;
-			}
-		}
-		return $user;
-	},
-	30,
-	3
+    'authenticate',
+    function ( $user, $username, $password ) {
+        if ( isset( $_POST['log'] ) && ! empty( $_POST['log'] ) && isset( $_POST['pwd'] ) ) {
+            $login_input = $_POST['log'];
+            if ( is_email( $login_input ) ) {
+                $user_obj = get_user_by( 'email', $login_input );
+                if ( $user_obj ) {
+                    $username = $user_obj->user_login;
+                }
+            }
+            $user = wp_authenticate_username_password( null, $username, $password );
+            if ( is_wp_error( $user ) ) {
+                wp_safe_redirect( add_query_arg( 'login', 'failed', wp_get_referer() ) );
+                exit;
+            }
+        }
+        return $user;
+    },
+    30,
+    3
 );
 
 
